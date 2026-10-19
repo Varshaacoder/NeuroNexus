@@ -28,3 +28,4 @@ tunnel_live.log
 LATEST_LIVE_URL.txt
 deploy_surge.py
 
+.env
