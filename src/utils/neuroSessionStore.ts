@@ -63,6 +63,38 @@ export const INITIAL_DEMO_SESSIONS: LearningSession[] = [
         actionTopic: 'Pointer Arithmetic',
       },
     ],
+    focusProfile: {
+      cognitiveWorkload: 'Elevated',
+      workloadEvidence: 'Beta power and sample entropy indicate high concentration up to minute 18, followed by a typical cognitive saturation dip at minute 19.',
+      recommendedOptimalDurationMinutes: 18,
+      averageFocusRecoverySeconds: 34,
+      sessionEngagementRatePercent: 96,
+      focusPerformanceMismatch: {
+        patternDetected: true,
+        description: 'Sustained focus declined after minute 18 while study timer continued to run.',
+        recommendation: 'Cap deep pointer tracing sessions at 18 minutes followed by a 3-minute physical reset.',
+      },
+    },
+    coachSuggestions: [
+      {
+        id: 'coach_001_pacing',
+        title: 'Calibrate Pointer Tracing Duration',
+        observedPattern: 'Focus dropped from 85% to 64% after minute 17 of continuous stack pointer tracing.',
+        supportingEvidence: 'High frontal coherence earlier in the session confirms optimal early engagement; the drop aligns with working memory load limits.',
+        actionableStep: 'Set your study timer to 18-minute intervals with mandatory 3-minute visual rest breaks.',
+        evaluationMethod: 'Check whether average attention in the next session remains above 80% throughout.',
+        category: 'break',
+      },
+      {
+        id: 'coach_001_retrieval',
+        title: 'Post-Session Memory Diagram Sketch',
+        observedPattern: 'Steady frontal engagement during stack diagram analysis (minutes 5-15).',
+        supportingEvidence: 'Theta/Beta ratio remained at 1.45, reflecting active analytical processing.',
+        actionableStep: 'Immediately sketch the pointer address table on paper from memory without glancing at notes.',
+        evaluationMethod: 'Take a quick 2-question pointer arithmetic check to verify zero calculation errors.',
+        category: 'recall',
+      },
+    ],
   },
   {
     id: 'demo_session_002',

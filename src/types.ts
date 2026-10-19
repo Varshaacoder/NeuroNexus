@@ -174,6 +174,36 @@ export interface FocusCoachSuggestion {
   category: 'pacing' | 'break' | 'topic_revision' | 'environment' | 'recall';
 }
 
+export interface SelfReportedFocusCheckIn {
+  timestampMs: number;
+  elapsedMinute: number;
+  perceivedFocusRating: number; // 1 to 5
+  distractionLevel: 'None' | 'Mild' | 'Moderate' | 'Severe';
+  distractionSource?: 'Internal Fatigue' | 'External Noise' | 'Difficult Concept' | 'Phone/Device' | 'Other';
+  studyStrategyUsed?: 'Active Recall' | 'Summarizing' | 'Problem Solving' | 'Passive Reading';
+}
+
+export interface TaskInterruptionEvent {
+  id: string;
+  timestampMs: number;
+  durationSeconds: number;
+  type: 'pause' | 'tab_switch' | 'unplanned_break';
+  recoveryTimeSeconds: number; // Time taken to regain steady focus
+}
+
+export interface NeuroNexusFocusProfile {
+  cognitiveWorkload: 'Optimal' | 'Underload' | 'Elevated' | 'Fatigue Saturated';
+  workloadEvidence: string;
+  focusPerformanceMismatch?: {
+    patternDetected: boolean;
+    description: string;
+    recommendation: string;
+  };
+  recommendedOptimalDurationMinutes: number;
+  averageFocusRecoverySeconds: number;
+  sessionEngagementRatePercent: number;
+}
+
 export interface LearningSession {
   id: string;
   userId: string;
@@ -191,6 +221,9 @@ export interface LearningSession {
   questionEvents?: QuestionIntervalEvent[];
   focusDropEvents?: FocusDropEvent[];
   coachSuggestions?: FocusCoachSuggestion[];
+  selfCheckIn?: SelfReportedFocusCheckIn;
+  interruptions?: TaskInterruptionEvent[];
+  focusProfile?: NeuroNexusFocusProfile;
   eegInterrupted?: boolean;
   interruptionReason?: string;
   score?: number; // percentage if quiz/test
