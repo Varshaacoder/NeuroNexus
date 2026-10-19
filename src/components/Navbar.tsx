@@ -7,6 +7,8 @@ import {
 import type { UserProfile, UserRole, AppPage } from '../types';
 import { PRESET_USERS, AVAILABLE_COURSES, COMMUNITY_POSTS, RANK_LEADERBOARD } from '../mockData';
 
+import { isDemoUser } from '../utils/neuroSessionStore';
+
 interface NavbarProps {
   currentUser: UserProfile;
   onLogout: () => void;
@@ -120,10 +122,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-md shadow-indigo-200">
             <Brain className="w-5 h-5 text-white" />
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <span className="font-black text-lg text-slate-900 tracking-tight">
               Neuro<span className="text-indigo-600">Nexus</span>
             </span>
+            {isDemoUser(currentUser.id, currentUser.email) && (
+              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                DEMO MODE
+              </span>
+            )}
           </div>
         </div>
 

@@ -286,9 +286,34 @@ export const INITIAL_COLLEGE_SCHEDULED_TESTS: CollegeScheduledTest[] = [
 
 // ─── STORAGE HELPER FUNCTIONS ────────────────────────────────────────────────
 
+export function isDemoUser(userId: string, email?: string): boolean {
+  if (!userId) return false;
+  const uid = userId.toLowerCase();
+  const mail = (email || '').toLowerCase();
+  return (
+    uid === 'demo_student' ||
+    uid.includes('demo') ||
+    uid === 'yumi' ||
+    uid === 'alex' ||
+    mail.includes('demo')
+  );
+}
+
+export function resetDemoData(): void {
+  try {
+    localStorage.removeItem('neuronexus_sessions_demo_student');
+    localStorage.removeItem('neuronexus_sessions_yumi');
+    localStorage.removeItem('neuronexus_sessions_alex');
+    localStorage.removeItem('neuronexus_college_tests');
+    localStorage.removeItem('neuronexus_mock_attempts');
+  } catch (err) {
+    console.error('Failed to reset demo data:', err);
+  }
+}
+
 export function getStudentSessions(userId: string): LearningSession[] {
   try {
-    const isDemo = userId === 'demo_student' || userId.includes('demo');
+    const isDemo = isDemoUser(userId);
     const storageKey = `neuronexus_sessions_${userId}`;
     const stored = localStorage.getItem(storageKey);
     

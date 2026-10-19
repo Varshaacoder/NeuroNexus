@@ -8,6 +8,7 @@ import {
   Award, Flame, Clock, TrendingUp, ArrowRight,
   AlertTriangle, FileCheck2, Video, BookOpen, HelpCircle, Target, Sparkles, Users
 } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import type { UserProfile } from '../types';
 
 interface WelcomeCardProps {
@@ -20,12 +21,14 @@ interface WelcomeCardProps {
   onOpenPomodoro: () => void;
   onNavigateCourses: () => void;
   onNavigateMessages?: () => void;
+  onNavigateTests?: () => void;
+  onNavigateNeuroAnalysis?: () => void;
 }
 
 export const WelcomeCard: React.FC<WelcomeCardProps> = ({
   user, onOpenRevision, onOpenPracticeQuestions, onOpenMiniAssessment,
   onOpenMockTest, onOpenAIClassroom, onOpenPomodoro, onNavigateCourses,
-  onNavigateMessages,
+  onNavigateMessages, onNavigateTests, onNavigateNeuroAnalysis,
 }) => {
   const isFreshUser = (!user.email?.toLowerCase().includes('demo')) && (user.enrolledCourses?.length === 0);
   const recommendedTopic = user.weakTopics?.[0] ?? { name: 'Pointer Arithmetic', mastery: 41, course: 'C Programming & Systems' };
@@ -257,46 +260,67 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
             </div>
 
             {/* ── SUGGESTED NEXT ACTION (COLORFUL BUTTON ACCESSORIES) ──────────── */}
-            <div className="space-y-2.5 pt-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Suggested Next Action:
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Suggested Next Actions:
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">Quick Pathways</span>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                 {/* Action 1: 10-minute revision (Emerald) */}
                 <button
                   onClick={() => onOpenRevision(recommendedTopic.name)}
-                  className="py-3 px-3.5 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs shadow-emerald-200 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+                  className="py-2.5 px-3 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs shadow-emerald-200 flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
                 >
-                  <BookOpen className="w-4 h-4 shrink-0" />
-                  <span>10-minute revision</span>
+                  <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Revision (10m)</span>
                 </button>
 
                 {/* Action 2: 5 practice questions (Indigo) */}
                 <button
                   onClick={() => onOpenPracticeQuestions(recommendedTopic.name)}
-                  className="py-3 px-3.5 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs shadow-indigo-200 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+                  className="py-2.5 px-3 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs shadow-indigo-200 flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
                 >
-                  <HelpCircle className="w-4 h-4 shrink-0" />
-                  <span>5 practice questions</span>
+                  <HelpCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">5 Practice Qs</span>
                 </button>
 
                 {/* Action 3: Mini assessment (Amber) */}
                 <button
                   onClick={() => onOpenMiniAssessment(recommendedTopic.name)}
-                  className="py-3 px-3.5 rounded-xl font-bold text-xs text-slate-900 bg-amber-400 hover:bg-amber-500 shadow-xs shadow-amber-200 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+                  className="py-2.5 px-3 rounded-xl font-bold text-xs text-slate-900 bg-amber-400 hover:bg-amber-500 shadow-xs shadow-amber-200 flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
                 >
-                  <FileCheck2 className="w-4 h-4 shrink-0" />
-                  <span>Mini assessment</span>
+                  <FileCheck2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Assessment</span>
                 </button>
 
                 {/* Action 4: Start AI Classroom Session (Cyan/Violet) */}
                 <button
                   onClick={onOpenAIClassroom}
-                  className="py-3 px-3.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-xs shadow-cyan-200 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+                  className="py-2.5 px-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-xs shadow-violet-200 flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
                 >
-                  <Video className="w-4 h-4 shrink-0" />
-                  <span>AI Classroom Session</span>
+                  <Video className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">AI Classroom</span>
+                </button>
+
+                {/* Action 5: Tests Hub (Blue) */}
+                <button
+                  onClick={onNavigateTests}
+                  className="py-2.5 px-3 rounded-xl font-bold text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
+                >
+                  <FileCheck2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
+                  <span className="truncate">Scheduled Tests</span>
+                </button>
+
+                {/* Action 6: Neuro Analysis (Purple/Fuchsia) */}
+                <button
+                  onClick={onNavigateNeuroAnalysis}
+                  className="py-2.5 px-3 rounded-xl font-bold text-xs text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 shadow-2xs flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
+                >
+                  <Brain className="w-3.5 h-3.5 shrink-0 text-purple-600" />
+                  <span className="truncate">Neuro Analysis</span>
                 </button>
               </div>
             </div>
@@ -319,96 +343,185 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           
-          {/* 1. Weekly Progress Area Chart */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Weekly Progress Analysis</h3>
-                <p className="text-xs text-slate-500">Overall academic progress growth</p>
+          {/* 1. Weekly Progress Dual-Series Area & Line Chart */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-slate-900">Weekly Progress Analysis</h3>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                      Dual Metric
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">Mastery vs. Cognitive Focus Stability</p>
+                </div>
+                <TrendingUp className="w-5 h-5 text-indigo-600 shrink-0" />
               </div>
-              <TrendingUp className="w-5 h-5 text-indigo-600" />
+
+              {/* Legend */}
+              <div className="flex items-center gap-3 text-[10px] font-bold mb-3 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                <div className="flex items-center gap-1 text-indigo-600">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-indigo-600" />
+                  <span>Academic Mastery</span>
+                </div>
+                <div className="flex items-center gap-1 text-purple-600">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-purple-500" />
+                  <span>Cognitive Workload Index</span>
+                </div>
+              </div>
+
+              <div className="h-36">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={[
+                      { week: 'W1', academicScore: 52, cognitiveIndex: 68 },
+                      { week: 'W2', academicScore: 58, cognitiveIndex: 72 },
+                      { week: 'W3', academicScore: 61, cognitiveIndex: 76 },
+                      { week: 'W4', academicScore: 67, cognitiveIndex: 81 },
+                      { week: 'W5', academicScore: progressPct || 71, cognitiveIndex: focusPct || 85 },
+                    ]}
+                    margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
+                  >
+                    <defs>
+                      <linearGradient id="academicGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="cognitiveGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, 100]} />
+                    <Tooltip
+                      formatter={(val: any, name?: any) => [
+                        `${val}%`,
+                        String(name) === 'academicScore' ? 'Academic Mastery' : 'Cognitive Workload Index'
+                      ]}
+                      contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 11 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="academicScore"
+                      stroke="#6366f1"
+                      strokeWidth={2.5}
+                      fill="url(#academicGrad)"
+                      dot={{ fill: '#6366f1', strokeWidth: 0, r: 2.5 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="cognitiveIndex"
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      strokeDasharray="4 2"
+                      fill="url(#cognitiveGrad)"
+                      dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 2.5 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="h-36">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={user.weeklyProgressHistory?.length ? user.weeklyProgressHistory : [
-                  { week: 'W1', score: 52 }, { week: 'W2', score: 58 }, { week: 'W3', score: 64 },
-                  { week: 'W4', score: 67 }, { week: 'W5', score: progressPct },
-                ]} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                  <defs>
-                    <linearGradient id="progressGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, 100]} />
-                  <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                  <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={2.5} fill="url(#progressGrad)" dot={{ fill: '#6366f1', strokeWidth: 0, r: 3 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+
             <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-slate-100">
-              <span className="text-slate-500">Mastery velocity</span>
-              <span className="font-bold text-indigo-600">+{progressPct - 48}% this month</span>
+              <span className="text-slate-500 text-[11px]">Velocity: +{progressPct - 48}% mastery</span>
+              <span className="font-bold text-purple-600 text-[11px]">+6.2% focus stability</span>
             </div>
           </div>
 
-          {/* 2. Topic Mastery Radar Chart */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Topic Mastery Radar</h3>
-                <p className="text-xs text-slate-500">Cross-subject competency balance</p>
+          {/* 2. Topic Mastery Radar Chart with Neural Context */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Topic Mastery Radar</h3>
+                  <p className="text-xs text-slate-500">Problem-solving vs. Neural Stability</p>
+                </div>
+                <Award className="w-5 h-5 text-amber-500 shrink-0" />
               </div>
-              <Award className="w-5 h-5 text-amber-500" />
+
+              {/* Legend */}
+              <div className="flex items-center gap-3 text-[10px] font-bold mb-2 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                <div className="flex items-center gap-1 text-purple-600">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-purple-600" />
+                  <span>Demonstrated Mastery</span>
+                </div>
+                <div className="flex items-center gap-1 text-cyan-600">
+                  <div className="w-2.5 h-2.5 rounded-sm bg-cyan-500" />
+                  <span>Observed Neural Focus</span>
+                </div>
+              </div>
+
+              <div className="h-36">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="65%" data={[
+                    { subject: 'C Systems', mastery: 74, neuralStability: 82 },
+                    { subject: 'Data Structures', mastery: 88, neuralStability: 86 },
+                    { subject: 'DBMS', mastery: 65, neuralStability: 78 },
+                    { subject: 'Probability', mastery: 42, neuralStability: 64 },
+                    { subject: 'Functions', mastery: 91, neuralStability: 88 },
+                    { subject: 'Pointers', mastery: 38, neuralStability: 79 },
+                  ]}>
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8.5, fill: '#64748b', fontWeight: 600 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                    <Radar
+                      name="Demonstrated Mastery"
+                      dataKey="mastery"
+                      stroke="#8b5cf6"
+                      fill="#8b5cf6"
+                      fillOpacity={0.25}
+                      strokeWidth={2}
+                    />
+                    <Radar
+                      name="Observed Neural Focus"
+                      dataKey="neuralStability"
+                      stroke="#06b6d4"
+                      fill="#06b6d4"
+                      fillOpacity={0.15}
+                      strokeWidth={1.5}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="68%" data={user.topicMasteryData?.length ? user.topicMasteryData : [
-                  { subject: 'C Systems', mastery: 68 }, { subject: 'Data Structures', mastery: 85 },
-                  { subject: 'DBMS', mastery: 72 }, { subject: 'Probability', mastery: 52 },
-                  { subject: 'Functions', mastery: 91 }, { subject: 'Pointers', mastery: 41 },
-                ]}>
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                  <Radar name="Mastery" dataKey="mastery" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} strokeWidth={2} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-              <span className="text-slate-500">Peak: Functions (91%)</span>
-              <span className="font-bold text-rose-500">Drill: Pointers (41%)</span>
+
+            <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100">
+              <span className="text-slate-500 font-medium truncate">Peak: Functions (91% / 88%)</span>
+              <span className="font-bold text-rose-500 shrink-0">High Load: Pointers (38% / 79%)</span>
             </div>
           </div>
 
           {/* 3. Daily Study Hours Bar Chart */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Daily Study Hours</h3>
-                <p className="text-xs text-slate-500">Weekly active focus time</p>
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Daily Study Hours</h3>
+                  <p className="text-xs text-slate-500">Weekly active focus time</p>
+                </div>
+                <Clock className="w-5 h-5 text-emerald-500 shrink-0" />
               </div>
-              <Clock className="w-5 h-5 text-emerald-500" />
-            </div>
-            <div className="h-36">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={user.dailyStudyHours?.length ? user.dailyStudyHours : [
-                  { day: 'Mon', hours: 2.0 }, { day: 'Tue', hours: 1.5 }, { day: 'Wed', hours: 3.0 },
-                  { day: 'Thu', hours: 1.8 }, { day: 'Fri', hours: 2.5 }, { day: 'Sat', hours: 1.0 }, { day: 'Sun', hours: 2.2 },
-                ]} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                  <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                  <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
-                    {[0, 1, 2, 3, 4, 5, 6].map((_, index) => (
-                      <Cell key={index} fill={index === 2 ? '#10b981' : '#6366f1'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="h-36">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={user.dailyStudyHours?.length ? user.dailyStudyHours : [
+                    { day: 'Mon', hours: 2.0 }, { day: 'Tue', hours: 1.5 }, { day: 'Wed', hours: 3.0 },
+                    { day: 'Thu', hours: 1.8 }, { day: 'Fri', hours: 2.5 }, { day: 'Sat', hours: 1.0 }, { day: 'Sun', hours: 2.2 },
+                  ]} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                    <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                    <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
+                      {[0, 1, 2, 3, 4, 5, 6].map((_, index) => (
+                        <Cell key={index} fill={index === 2 ? '#10b981' : '#6366f1'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
             <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-slate-100">
               <span className="text-slate-500">Peak day: Wednesday</span>

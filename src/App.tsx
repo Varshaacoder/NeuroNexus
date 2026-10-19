@@ -24,6 +24,7 @@ import { MessagingPage } from './components/MessagingPage';
 import { TestsPage } from './components/TestsPage';
 import { NeuroAnalysisPage } from './components/NeuroAnalysisPage';
 import { SMART_REMINDERS, INITIAL_MESSAGES } from './mockData';
+import { isDemoUser, resetDemoData } from './utils/neuroSessionStore';
 import type { UserProfile, AppPage } from './types';
 
 type ModalType = 'mockTest' | 'aiClassroom' | 'revision' | 'practice' | 'pomodoro' | 'notifications' | null;
@@ -172,6 +173,8 @@ export default function App() {
         onOpenPomodoro={() => setOpenModal('pomodoro')}
         onNavigateCourses={() => setCurrentPage('courses')}
         onNavigateMessages={() => setCurrentPage('messages')}
+        onNavigateTests={() => setCurrentPage('tests')}
+        onNavigateNeuroAnalysis={() => setCurrentPage('neuro-analysis')}
       />
 
       {/* Two-column: AI Summary + Reminders */}
@@ -213,6 +216,39 @@ export default function App() {
         unreadMessages={unreadMessages}
         onOpenTimer={() => setOpenModal('pomodoro')}
       />
+
+      {/* Persistent Demo Mode Banner */}
+      {isDemoUser(currentUser.id, currentUser.email) && (
+        <div className="bg-gradient-to-r from-amber-600 via-indigo-700 to-purple-800 text-white px-4 py-2 text-xs shadow-sm flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border border-white/20">
+              DEMO MODE
+            </span>
+            <span>
+              <strong>Demonstration Dataset Active</strong> &bull; Evaluation profile with pre-populated records [<span className="font-semibold text-amber-200">Demo Data &mdash; Not Live EEG</span>].
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5 text-xs">
+            <button
+              onClick={() => {
+                resetDemoData();
+                window.location.reload();
+              }}
+              className="px-2.5 py-1 rounded bg-black/25 hover:bg-black/45 text-amber-100 hover:text-white border border-white/20 transition-all font-semibold"
+            >
+              Reset Demo Records
+            </button>
+            <button
+              onClick={() => {
+                handleLogout();
+              }}
+              className="px-2.5 py-1 rounded bg-white text-indigo-900 hover:bg-indigo-50 font-bold transition-all shadow-2xs"
+            >
+              + Register New Student (Clean State)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Notification Drawer */}
       {showNotifications && (

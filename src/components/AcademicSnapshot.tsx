@@ -99,9 +99,15 @@ export const AcademicSnapshot: React.FC<AcademicSnapshotProps> = ({ user, onNavi
   ];
 
   const strongTopics = [
-    { topic: 'Functions & Scope', mastery: 91 },
-    { topic: 'Linear Arrays', mastery: 88 },
-    { topic: 'Basic SQL Queries', mastery: 85 },
+    { topic: 'Functions & Scope', mastery: 91, focusContext: '92% Focus (Flow state)' },
+    { topic: 'Linear Arrays', mastery: 88, focusContext: '86% Focus (Steady)' },
+    { topic: 'Basic SQL Queries', mastery: 85, focusContext: '84% Focus (Optimal)' },
+  ];
+
+  const weakTopicsWithNeural = [
+    { topic: 'Pointer Arithmetic', mastery: 38, focusContext: '79% Focus (High effort, memory tracing bottleneck)', status: 'Cognitive Saturation' },
+    { topic: 'Relational Algebra', mastery: 42, focusContext: '68% Focus (Attention drift after 15m)', status: 'Vigilance Dip' },
+    { topic: 'Discrete Probability', mastery: 48, focusContext: '74% Focus (Moderate stability)', status: 'Needs Practice' },
   ];
 
   const monthlyImprovement = [
@@ -112,97 +118,150 @@ export const AcademicSnapshot: React.FC<AcademicSnapshotProps> = ({ user, onNavi
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 flex flex-col gap-8">
+    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 flex flex-col gap-7">
+      
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-100">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Academic & Cognitive Analytics</span>
+          </div>
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">Topic Mastery + Neural Context</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Cross-referencing demonstrated problem-solving accuracy with observed attentional engagement</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+            Stage 4: Unified Analytics
+          </span>
+        </div>
+      </div>
+
+      {/* Scientific Caution Alert Banner */}
+      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed flex items-start gap-2.5">
+        <Sparkles className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+        <div>
+          <strong>Scientific Principle:</strong> EEG indicators represent observational physiological context (cognitive workload, mental effort, and vigilance drift). Academic mastery is evaluated directly through problem-solving accuracy and verified assessment evidence. Correlation does not imply causation.
+        </div>
+      </div>
+
+      {/* Course Progress Section */}
       <div>
-        <h2 className="text-xl font-bold text-slate-800 mb-4">Course Progress</h2>
-        <div className="h-64 w-full">
+        <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between">
+          <span>Active Course Progress</span>
+          <span className="text-xs text-slate-400 font-normal">Syllabus Completion</span>
+        </h3>
+        <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={courseProgress} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
               <XAxis type="number" domain={[0, 100]} hide />
-              <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontWeight: 600 }} />
-              <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-              <Bar dataKey="progress" radius={[0, 4, 4, 0]} barSize={24}>
+              <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontWeight: 600, fontSize: 12 }} />
+              <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: 12 }} />
+              <Bar dataKey="progress" radius={[0, 6, 6, 0]} barSize={22}>
                 {courseProgress.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
-                <LabelList dataKey="progress" position="right" formatter={(val: any) => `${val}%`} fill="#64748b" fontWeight={500} />
+                <LabelList dataKey="progress" position="right" formatter={(val: any) => `${val}%`} fill="#64748b" fontWeight={600} fontSize={11} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <h3 className="text-lg font-semibold text-rose-600 mb-4">Weak Topics Requiring Attention</h3>
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weakTopics} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
-                <XAxis type="number" domain={[0, 100]} hide />
-                <YAxis dataKey="topic" type="category" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 14 }} />
-                <Tooltip cursor={{ fill: '#fff1f2' }} />
-                <Bar dataKey="mastery" radius={[0, 4, 4, 0]} barSize={20}>
-                  {weakTopics.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.mastery < 40 ? '#e11d48' : '#f59e0b'} />
-                  ))}
-                  <LabelList dataKey="mastery" position="right" formatter={(val: any) => `${val}%`} fill="#64748b" fontSize={12} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Two Column: Weak Topics + Strong Topics with Neural Context */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Left: Weak Topics with Neural Observations */}
+        <div className="p-5 rounded-2xl bg-rose-50/40 border border-rose-100 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-rose-800">Weak Topics Requiring Practice</h3>
+            <span className="text-[10px] font-bold text-rose-700 bg-rose-100/60 px-2 py-0.5 rounded-md">Diagnostic Deficit</span>
+          </div>
+
+          <div className="space-y-3">
+            {weakTopicsWithNeural.map((item, idx) => (
+              <div key={idx} className="p-3 bg-white rounded-xl border border-rose-200/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">{item.topic}</span>
+                  <span className="font-black text-rose-600">{item.mastery}% Mastery</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-rose-500 rounded-full" style={{ width: `${item.mastery}%` }} />
+                </div>
+                <div className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
+                  <span className="text-indigo-700 font-medium">{item.focusContext}</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">{item.status}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div>
-          <h3 className="text-lg font-semibold text-emerald-600 mb-4">Strong Topics</h3>
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={strongTopics} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
-                <XAxis type="number" domain={[0, 100]} hide />
-                <YAxis dataKey="topic" type="category" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 14 }} />
-                <Tooltip cursor={{ fill: '#ecfdf5' }} />
-                <Bar dataKey="mastery" radius={[0, 4, 4, 0]} barSize={20}>
-                  {strongTopics.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.mastery > 90 ? '#10b981' : '#34d399'} />
-                  ))}
-                  <LabelList dataKey="mastery" position="right" formatter={(val: any) => `${val}%`} fill="#64748b" fontSize={12} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Right: Strong Topics with Neural Observations */}
+        <div className="p-5 rounded-2xl bg-emerald-50/40 border border-emerald-100 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-emerald-800">Verified Strong Topics</h3>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-md">Solid Foundation</span>
+          </div>
+
+          <div className="space-y-3">
+            {strongTopics.map((item, idx) => (
+              <div key={idx} className="p-3 bg-white rounded-xl border border-emerald-200/60 shadow-2xs space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">{item.topic}</span>
+                  <span className="font-black text-emerald-600">{item.mastery}% Mastery</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${item.mastery}%` }} />
+                </div>
+                <div className="text-[11px] text-slate-500 flex items-center justify-between pt-0.5">
+                  <span className="text-emerald-700 font-medium">{item.focusContext}</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">High Stability</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+
       </div>
 
+      {/* Monthly Improvement with Multi-Subject Bars */}
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Progress Improvement This Month</h3>
-        <div className="h-72 w-full">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-slate-800">Assessment Improvement Velocity This Month</h3>
+          <span className="text-xs text-slate-400">Weekly Delta</span>
+        </div>
+        <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyImprovement} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: '#475569' }} dy={10} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} dx={-10} />
-              <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+            <BarChart data={monthlyImprovement} margin={{ top: 15, right: 20, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+              <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: 12 }} />
               <Bar dataKey="Pointers" fill="#e11d48" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Recursion" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Graphs" fill="#3b82f6" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex justify-center items-center gap-6 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-rose-600"></div>
-            <span className="text-sm text-slate-600 font-medium">Pointers</span>
+        <div className="flex justify-center items-center gap-6 mt-3 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-rose-600"></div>
+            <span className="text-slate-600 font-semibold">Pointer Arithmetic (+25%)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-            <span className="text-sm text-slate-600 font-medium">Recursion</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+            <span className="text-slate-600 font-semibold">Recursion (+27%)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span className="text-sm text-slate-600 font-medium">Graphs</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+            <span className="text-slate-600 font-semibold">Graph Algorithms (+43%)</span>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
