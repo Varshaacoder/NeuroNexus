@@ -21,6 +21,7 @@ export interface UserProfile {
   overallProgress?: number;
   focusScore?: number;
   pomodoroCountWeek?: number;
+  totalStudyMinutes?: number;
   streakDays?: number;
   studyPreferences?: string[];
   preferredStudyHours?: string;
@@ -122,15 +123,29 @@ export interface AIRecommendation {
   actionTopic?: string;
 }
 
+export interface PomodoroPhaseRecord {
+  phaseType: 'focus' | 'short_break' | 'long_break';
+  startTimeMs: number;
+  endTimeMs: number;
+  durationSeconds: number;
+  completed: boolean;
+  eegRecordingActive: boolean;
+}
+
 export interface LearningSession {
   id: string;
   userId: string;
   title: string;
-  type: 'study' | 'quiz' | 'college_test';
+  type: 'study' | 'pomodoro' | 'quiz' | 'college_test';
   course: string;
   topic?: string;
   startTime: string; // ISO string or human formatted date
   durationMinutes: number;
+  focusMinutes?: number;
+  breakMinutes?: number;
+  pomodoroPhases?: PomodoroPhaseRecord[];
+  eegInterrupted?: boolean;
+  interruptionReason?: string;
   score?: number; // percentage if quiz/test
   totalQuestions?: number;
   correctAnswers?: number;

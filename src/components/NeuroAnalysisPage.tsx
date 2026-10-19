@@ -59,7 +59,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
   });
 
   // History filters
-  const [filterType, setFilterType] = useState<'all' | 'study' | 'quiz' | 'college_test'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'study' | 'pomodoro' | 'quiz' | 'college_test'>('all');
   const [filterCourse, setFilterCourse] = useState<string>('all');
   const [filterEegOnly, setFilterEegOnly] = useState<boolean>(false);
 
@@ -559,20 +559,63 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                   </div>
                 </div>
 
-                {/* Data-source provenance label */}
-                <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold border ${
-                    selectedSession.isSimulated
-                      ? 'bg-amber-50 text-amber-800 border-amber-300'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full ${selectedSession.isSimulated ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                    {selectedSession.isSimulated ? 'Simulated Demo Data — Not Live EEG' : 'Recorded Hardware Session'}
-                  </span>
-                  <span className="text-slate-400">
-                    {selectedSession.focusDynamics.length} sampled intervals • {selectedSession.durationMinutes} min total
-                  </span>
+                {/* Data-source provenance & phase summary label */}
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold border ${
+                      selectedSession.isSimulated
+                        ? 'bg-amber-50 text-amber-800 border-amber-300'
+                        : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${selectedSession.isSimulated ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      {selectedSession.isSimulated ? 'Simulated Demo Data — Not Live EEG' : 'Recorded Hardware Session'}
+                    </span>
+                    <span className="text-slate-400">
+                      {selectedSession.focusDynamics.length} sampled intervals • {selectedSession.durationMinutes} min total
+                    </span>
+                  </div>
+
+                  {/* Pomodoro Focus vs Break Duration Breakdown */}
+                  {selectedSession.type === 'pomodoro' && (
+                    <div className="flex items-center gap-2 text-xs font-bold">
+                      <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        Focus: {selectedSession.focusMinutes ?? selectedSession.durationMinutes}m
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Break: {selectedSession.breakMinutes ?? 0}m
+                      </span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Device Interruption Notice if disconnected unexpectedly */}
+                {selectedSession.eegInterrupted && (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-900 flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      <strong>Recording Interrupted:</strong> {selectedSession.interruptionReason || 'Device disconnected before session conclusion. Captured EEG samples prior to disconnect were preserved.'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Pomodoro Phases Timeline Markers if present */}
+                {selectedSession.pomodoroPhases && selectedSession.pomodoroPhases.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
+                    <span className="font-bold text-slate-500 mr-1">Session Phases:</span>
+                    {selectedSession.pomodoroPhases.map((phase, idx) => (
+                      <span
+                        key={idx}
+                        className={`px-2 py-0.5 rounded-md font-semibold border ${
+                          phase.phaseType === 'focus'
+                            ? 'bg-indigo-50 border-indigo-200 text-indigo-800'
+                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        }`}
+                      >
+                        {phase.phaseType === 'focus' ? '🎯 Focus Block' : '☕ Break Relaxation'} ({Math.round(phase.durationSeconds / 60)}m)
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 <div className="h-64 sm:h-72 w-full bg-slate-50/60 rounded-2xl border border-slate-200/90 p-4">
                   <ResponsiveContainer width="100%" height="100%">
@@ -918,7 +961,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
 
           {/* Type Filter */}
           <div className="flex bg-slate-100 p-1 rounded-xl">
-            {(['all', 'study', 'quiz', 'college_test'] as const).map((t) => (
+            {(['all', 'study', 'pomodoro', 'quiz', 'college_test'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
@@ -928,7 +971,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {t === 'college_test' ? 'College Tests' : t}
+                {t === 'college_test' ? 'College Tests' : t === 'pomodoro' ? 'Pomodoro' : t}
               </button>
             ))}
           </div>

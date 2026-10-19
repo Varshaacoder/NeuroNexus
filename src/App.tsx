@@ -306,6 +306,11 @@ export default function App() {
           onClose={closeModal}
           user={currentUser}
           onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+          onNavigateToNeuroAnalysis={(sessId) => {
+            if (sessId) setSelectedNeuroSessionId(sessId);
+            setCurrentPage('neuro-analysis');
+          }}
+          onOpenHardwareManager={() => setShowHardwareModal(true)}
         />
       )}
       {selectedCourse && (

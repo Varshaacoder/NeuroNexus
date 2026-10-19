@@ -37,6 +37,7 @@ export interface EEGSample {
   values: number[]; // Voltage in microvolts (uV)
   quality: number;  // 0-100%
   isValid: boolean;
+  phase?: 'focus' | 'short_break' | 'long_break' | 'study' | 'quiz' | string;
 }
 
 export interface EEGDeviceStatus {
@@ -56,8 +57,10 @@ export interface RecordingSessionMeta {
   userId: string;
   course: string;
   topic: string;
-  type: 'study' | 'quiz';
+  type: 'study' | 'pomodoro' | 'quiz';
   title: string;
+  focusMinutes?: number;
+  breakMinutes?: number;
 }
 
 export class EEGDataService {
@@ -98,9 +101,14 @@ export class EEGDataService {
 
   // Active recording buffer
   private isRecording = false;
+  private isPaused = false;
+  private currentRecordingPhase: string = 'focus';
   private activeRecordingMeta: RecordingSessionMeta | null = null;
   private recordingStartTime = 0;
   private recordedSamples: EEGSample[] = [];
+  private interruptionFlag = false;
+  private interruptionReason?: string;
+  private customPhases: import('../types').PomodoroPhaseRecord[] = [];
 
   private constructor() {}
 
@@ -152,9 +160,13 @@ export class EEGDataService {
   }
 
   private notifySample(sample: EEGSample): void {
-    this.sampleListeners.forEach(l => l(sample));
-    if (this.isRecording) {
-      this.recordedSamples.push(sample);
+    const taggedSample: EEGSample = {
+      ...sample,
+      phase: this.currentRecordingPhase,
+    };
+    this.sampleListeners.forEach(l => l(taggedSample));
+    if (this.isRecording && !this.isPaused) {
+      this.recordedSamples.push(taggedSample);
     }
   }
 
@@ -297,6 +309,10 @@ export class EEGDataService {
     } catch (err: any) {
       if (this.keepReading) {
         console.warn('Serial read error:', err);
+        if (this.isRecording) {
+          this.interruptionFlag = true;
+          this.interruptionReason = 'Serial stream unexpectedly closed / disconnected during session.';
+        }
         this.status = {
           ...this.status,
           state: 'error',
@@ -409,18 +425,49 @@ export class EEGDataService {
 
   public startRecording(meta: RecordingSessionMeta): void {
     this.isRecording = true;
+    this.isPaused = false;
     this.activeRecordingMeta = meta;
     this.recordingStartTime = Date.now();
     this.recordedSamples = [];
+    this.interruptionFlag = false;
+    this.interruptionReason = undefined;
+    this.customPhases = [];
+    this.currentRecordingPhase = meta.type === 'pomodoro' ? 'focus' : 'study';
+  }
+
+  public pauseRecording(): void {
+    this.isPaused = true;
+  }
+
+  public resumeRecording(): void {
+    this.isPaused = false;
+  }
+
+  public isRecordingActive(): boolean {
+    return this.isRecording;
+  }
+
+  public isRecordingPaused(): boolean {
+    return this.isPaused;
+  }
+
+  public setRecordingPhase(phase: string): void {
+    this.currentRecordingPhase = phase;
+  }
+
+  public setCustomPhases(phases: import('../types').PomodoroPhaseRecord[]): void {
+    this.customPhases = phases;
   }
 
   public stopRecording(): LearningSession | null {
     if (!this.isRecording || !this.activeRecordingMeta) {
       this.isRecording = false;
+      this.isPaused = false;
       return null;
     }
 
     this.isRecording = false;
+    this.isPaused = false;
     const durationMs = Date.now() - this.recordingStartTime;
     const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
     const validSamples = this.recordedSamples.filter(s => s.isValid);
@@ -436,19 +483,30 @@ export class EEGDataService {
       const chunk = this.recordedSamples.slice(i, i + stepSize);
       const avgQ = chunk.reduce((acc, c) => acc + c.quality, 0) / (chunk.length || 1);
       const min = Math.round((chunk[0].timestamp - this.recordingStartTime) / 60000);
+      const samplePhase = chunk[0].phase || 'focus';
+
+      let displayPhase = 'Active Engagement';
+      if (samplePhase === 'short_break' || samplePhase === 'long_break') {
+        displayPhase = 'Break Relaxation';
+      } else if (samplePhase === 'focus') {
+        displayPhase = min < 3 ? 'Warmup Focus' : 'Deep Work';
+      }
+
       dynamics.push({
         minute: min + 1,
         timestamp: new Date(chunk[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         attentionScore: Math.round(Math.min(95, Math.max(45, avgQ - 5))),
         signalQuality: Math.round(avgQ),
         isArtifact: chunk.some(c => !c.isValid),
-        phase: min < 3 ? 'Warmup' : 'Active Engagement',
+        phase: displayPhase,
       });
     }
 
     const avgFocus = dynamics.length > 0
       ? Math.round(dynamics.reduce((acc, d) => acc + d.attentionScore, 0) / dynamics.length)
       : 75;
+
+    const isPomodoro = this.activeRecordingMeta.type === 'pomodoro';
 
     const session: LearningSession = {
       id: `live_session_${Date.now()}`,
@@ -459,6 +517,11 @@ export class EEGDataService {
       topic: this.activeRecordingMeta.topic,
       startTime: 'Just Now',
       durationMinutes,
+      focusMinutes: this.activeRecordingMeta.focusMinutes || (isPomodoro ? Math.round(durationMinutes * 0.8) : durationMinutes),
+      breakMinutes: this.activeRecordingMeta.breakMinutes || (isPomodoro ? Math.round(durationMinutes * 0.2) : 0),
+      pomodoroPhases: this.customPhases.length > 0 ? this.customPhases : undefined,
+      eegInterrupted: this.interruptionFlag,
+      interruptionReason: this.interruptionReason,
       hasEegData: true,
       isSimulated: false, // REAL HARDWARE SESSION
       neuralMetrics: {
@@ -486,7 +549,7 @@ export class EEGDataService {
         {
           id: `rec_${Date.now()}`,
           recommendation: `Recorded ${this.recordedSamples.length} hardware EEG samples across ${durationMinutes} minutes.`,
-          evidence: `Signal quality maintained at ${validCoverage}% coverage via BioAmp EXG frontopolar acquisition.`,
+          evidence: `Signal quality maintained at ${validCoverage}% coverage via BioAmp EXG frontopolar acquisition.${this.interruptionFlag ? ' Device disconnected during session.' : ''}`,
           actionType: 'revision',
           actionTopic: this.activeRecordingMeta.topic,
         }
