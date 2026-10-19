@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Brain } from 'lucide-react';
 import type { UserProfile } from '../types';
+import { isDemoUser } from '../utils/neuroSessionStore';
 
 interface WelcomeCardProps {
   user: UserProfile;
@@ -30,8 +31,10 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
   onOpenMockTest, onOpenAIClassroom, onOpenPomodoro, onNavigateCourses,
   onNavigateMessages, onNavigateTests, onNavigateNeuroAnalysis,
 }) => {
-  const isFreshUser = (!user.email?.toLowerCase().includes('demo')) && (user.enrolledCourses?.length === 0);
-  const recommendedTopic = user.weakTopics?.[0] ?? { name: 'Pointer Arithmetic', mastery: 41, course: 'C Programming & Systems' };
+  const isDemo = isDemoUser(user.id, user.email);
+  const isFreshUser = (!isDemo) && (user.enrolledCourses?.length === 0);
+  const hasWeakTopics = Boolean(user.weakTopics && user.weakTopics.length > 0);
+  const recommendedTopic = hasWeakTopics ? user.weakTopics![0] : (isDemo ? { name: 'Pointer Arithmetic', mastery: 38, course: 'C Programming & Systems' } : null);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -40,7 +43,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
     return 'Good Evening.';
   };
 
-  const currentRank = user.rank || 'Bronze Scholar';
+  const currentRank = user.rank || (isFreshUser ? 'Freshman Scholar (Unranked)' : 'Bronze Scholar');
   const progressPct = user.overallProgress ?? 0;
   const focusPct = user.focusScore ?? 0;
   const pomodoroCount = user.pomodoroCountWeek ?? 0;
@@ -180,6 +183,9 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                 <div className="w-full h-1.5 bg-indigo-200 rounded-full mt-2.5 overflow-hidden">
                   <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${progressPct}%` }} />
                 </div>
+                <div className="text-[10px] text-indigo-600 font-medium mt-1.5">
+                  {progressPct > 0 ? 'Syllabus mastery' : 'No courses completed yet'}
+                </div>
               </div>
 
               {/* 2. Focus Score */}
@@ -192,7 +198,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                   Focus Score: {focusPct}%
                 </div>
                 <div className="text-[11px] text-purple-600 font-semibold mt-2.5">
-                  Top 15% attention retention
+                  {focusPct > 0 ? (isDemo ? 'Top 15% attention retention [Demo Data]' : 'Verified EEG focus score') : 'No EEG sessions recorded yet'}
                 </div>
               </div>
 
@@ -209,7 +215,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                   {pomodoroCount} Sessions
                 </div>
                 <div className="text-[11px] text-amber-700 font-semibold mt-2.5">
-                  Completed this week
+                  {pomodoroCount > 0 ? 'Completed this week' : 'No study sessions yet'}
                 </div>
               </div>
 
@@ -223,41 +229,65 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                   {streak} Days
                 </div>
                 <div className="text-[11px] text-emerald-700 font-semibold mt-2.5">
-                  Consecutive daily goal met
+                  {streak > 0 ? 'Consecutive daily goal met' : 'Start your first study sprint'}
                 </div>
               </div>
             </div>
 
-            {/* ── CURRENT RECOMMENDED TOPIC ────────────────────────────────────── */}
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* ── CURRENT RECOMMENDED TOPIC / ACTION ───────────────────────────── */}
+            {recommendedTopic ? (
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      Current Recommended Topic:
+                    </div>
+                    <div className="text-xl sm:text-2xl font-black text-slate-900">
+                      {recommendedTopic.name}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      {recommendedTopic.course ?? 'C Programming & Systems'} • Understanding: <span className="font-bold text-rose-600">{recommendedTopic.mastery}%</span>
+                      {isDemo && <span className="ml-2 text-[10px] text-amber-700 font-semibold">[Demo Data]</span>}
+                    </div>
+                  </div>
+
+                  <div className="w-full md:w-56 shrink-0">
+                    <div className="flex justify-between text-xs text-slate-600 mb-1 font-semibold">
+                      <span>Understanding</span>
+                      <span className="text-rose-600 font-black">{recommendedTopic.mastery}%</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full"
+                        style={{ width: `${recommendedTopic.mastery}%` }}
+                      />
+                    </div>
+                    <div className="text-[10px] text-slate-400 mt-1">Target: 80% to reach Gold threshold</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                    Current Recommended Topic:
+                  <div className="text-xs font-bold uppercase tracking-wider text-indigo-700 mb-1">
+                    Recommended Next Step:
                   </div>
-                  <div className="text-xl sm:text-2xl font-black text-slate-900">
-                    {recommendedTopic.name}
+                  <div className="text-lg sm:text-xl font-black text-slate-900">
+                    Foundational Diagnostic Assessment
                   </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    {recommendedTopic.course ?? 'C Programming & Systems'} • Understanding: <span className="font-bold text-rose-600">{recommendedTopic.mastery}%</span>
+                  <div className="text-xs text-slate-600 mt-0.5">
+                    No weak topics identified yet • Attend a 15-minute diagnostic test to establish your personalized baseline.
                   </div>
                 </div>
-
-                <div className="w-full md:w-56 shrink-0">
-                  <div className="flex justify-between text-xs text-slate-600 mb-1 font-semibold">
-                    <span>Understanding</span>
-                    <span className="text-rose-600 font-black">{recommendedTopic.mastery}%</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full"
-                      style={{ width: `${recommendedTopic.mastery}%` }}
-                    />
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-1">Target: 80% to reach Gold threshold</div>
-                </div>
+                <button
+                  onClick={onOpenMockTest}
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-2 self-start md:self-center"
+                >
+                  <Target className="w-4 h-4" />
+                  <span>Start Baseline Assessment</span>
+                </button>
               </div>
-            </div>
+            )}
 
             {/* ── SUGGESTED NEXT ACTION (COLORFUL BUTTON ACCESSORIES) ──────────── */}
             <div className="space-y-3 pt-2">
@@ -271,7 +301,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
                 {/* Action 1: 10-minute revision (Emerald) */}
                 <button
-                  onClick={() => onOpenRevision(recommendedTopic.name)}
+                  onClick={() => onOpenRevision(recommendedTopic?.name || 'Functions')}
                   className="py-2.5 px-3 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs shadow-emerald-200 flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
                 >
                   <BookOpen className="w-3.5 h-3.5 shrink-0" />
@@ -280,7 +310,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
 
                 {/* Action 2: 5 practice questions (Indigo) */}
                 <button
-                  onClick={() => onOpenPracticeQuestions(recommendedTopic.name)}
+                  onClick={() => onOpenPracticeQuestions(recommendedTopic?.name || 'Functions')}
                   className="py-2.5 px-3 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs shadow-indigo-200 flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
                 >
                   <HelpCircle className="w-3.5 h-3.5 shrink-0" />
@@ -289,7 +319,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
 
                 {/* Action 3: Mini assessment (Amber) */}
                 <button
-                  onClick={() => onOpenMiniAssessment(recommendedTopic.name)}
+                  onClick={() => onOpenMiniAssessment(recommendedTopic?.name || 'Functions')}
                   className="py-2.5 px-3 rounded-xl font-bold text-xs text-slate-900 bg-amber-400 hover:bg-amber-500 shadow-xs shadow-amber-200 flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
                 >
                   <FileCheck2 className="w-3.5 h-3.5 shrink-0" />
@@ -353,6 +383,11 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                     <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
                       Dual Metric
                     </span>
+                    {isDemo && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        Demo Data
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-500">Mastery vs. Cognitive Focus Stability</p>
                 </div>
@@ -371,63 +406,77 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                 </div>
               </div>
 
-              <div className="h-36">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={[
-                      { week: 'W1', academicScore: 52, cognitiveIndex: 68 },
-                      { week: 'W2', academicScore: 58, cognitiveIndex: 72 },
-                      { week: 'W3', academicScore: 61, cognitiveIndex: 76 },
-                      { week: 'W4', academicScore: 67, cognitiveIndex: 81 },
-                      { week: 'W5', academicScore: progressPct || 71, cognitiveIndex: focusPct || 85 },
-                    ]}
-                    margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
-                  >
-                    <defs>
-                      <linearGradient id="academicGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="cognitiveGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, 100]} />
-                    <Tooltip
-                      formatter={(val: any, name?: any) => [
-                        `${val}%`,
-                        String(name) === 'academicScore' ? 'Academic Mastery' : 'Cognitive Workload Index'
-                      ]}
-                      contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 11 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="academicScore"
-                      stroke="#6366f1"
-                      strokeWidth={2.5}
-                      fill="url(#academicGrad)"
-                      dot={{ fill: '#6366f1', strokeWidth: 0, r: 2.5 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="cognitiveIndex"
-                      stroke="#8b5cf6"
-                      strokeWidth={2}
-                      strokeDasharray="4 2"
-                      fill="url(#cognitiveGrad)"
-                      dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 2.5 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {(!isDemo && (!user.weeklyProgressHistory || user.weeklyProgressHistory.length === 0)) ? (
+                <div className="h-36 flex flex-col items-center justify-center text-center p-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <TrendingUp className="w-7 h-7 text-slate-300 mb-1.5" />
+                  <span className="text-xs font-bold text-slate-700">No Weekly History Yet</span>
+                  <p className="text-[10px] text-slate-400 mt-0.5 max-w-[200px]">
+                    Your mastery velocity will calculate as you complete assessments.
+                  </p>
+                </div>
+              ) : (
+                <div className="h-36">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={(user.weeklyProgressHistory?.length ? user.weeklyProgressHistory.map(w => ({ week: w.week, academicScore: w.score, cognitiveIndex: Math.min(100, w.score + 10) })) : [
+                        { week: 'W1', academicScore: 52, cognitiveIndex: 68 },
+                        { week: 'W2', academicScore: 58, cognitiveIndex: 72 },
+                        { week: 'W3', academicScore: 61, cognitiveIndex: 76 },
+                        { week: 'W4', academicScore: 67, cognitiveIndex: 81 },
+                        { week: 'W5', academicScore: progressPct || 71, cognitiveIndex: focusPct || 85 },
+                      ]) as any}
+                      margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
+                    >
+                      <defs>
+                        <linearGradient id="academicGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="cognitiveGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                      <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} domain={[0, 100]} />
+                      <Tooltip
+                        formatter={(val: any, name?: any) => [
+                          `${val}%`,
+                          String(name) === 'academicScore' ? 'Academic Mastery' : 'Cognitive Workload Index'
+                        ]}
+                        contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 11 }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="academicScore"
+                        stroke="#6366f1"
+                        strokeWidth={2.5}
+                        fill="url(#academicGrad)"
+                        dot={{ fill: '#6366f1', strokeWidth: 0, r: 2.5 }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="cognitiveIndex"
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        strokeDasharray="4 2"
+                        fill="url(#cognitiveGrad)"
+                        dot={{ fill: '#8b5cf6', strokeWidth: 0, r: 2.5 }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-slate-100">
-              <span className="text-slate-500 text-[11px]">Velocity: +{progressPct - 48}% mastery</span>
-              <span className="font-bold text-purple-600 text-[11px]">+6.2% focus stability</span>
+              <span className="text-slate-500 text-[11px]">
+                {progressPct > 0 ? `Velocity: +${progressPct - 48}% mastery` : 'Initial Baseline'}
+              </span>
+              <span className="font-bold text-purple-600 text-[11px]">
+                {focusPct > 0 ? '+6.2% focus stability' : 'Uncalibrated'}
+              </span>
             </div>
           </div>
 
@@ -436,7 +485,14 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Topic Mastery Radar</h3>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-sm font-bold text-slate-900">Topic Mastery Radar</h3>
+                    {isDemo && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        Demo Data
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500">Problem-solving vs. Neural Stability</p>
                 </div>
                 <Award className="w-5 h-5 text-amber-500 shrink-0" />
@@ -454,43 +510,57 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                 </div>
               </div>
 
-              <div className="h-36">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="65%" data={[
-                    { subject: 'C Systems', mastery: 74, neuralStability: 82 },
-                    { subject: 'Data Structures', mastery: 88, neuralStability: 86 },
-                    { subject: 'DBMS', mastery: 65, neuralStability: 78 },
-                    { subject: 'Probability', mastery: 42, neuralStability: 64 },
-                    { subject: 'Functions', mastery: 91, neuralStability: 88 },
-                    { subject: 'Pointers', mastery: 38, neuralStability: 79 },
-                  ]}>
-                    <PolarGrid stroke="#e2e8f0" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8.5, fill: '#64748b', fontWeight: 600 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                    <Radar
-                      name="Demonstrated Mastery"
-                      dataKey="mastery"
-                      stroke="#8b5cf6"
-                      fill="#8b5cf6"
-                      fillOpacity={0.25}
-                      strokeWidth={2}
-                    />
-                    <Radar
-                      name="Observed Neural Focus"
-                      dataKey="neuralStability"
-                      stroke="#06b6d4"
-                      fill="#06b6d4"
-                      fillOpacity={0.15}
-                      strokeWidth={1.5}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
+              {(!isDemo && (!user.topicMasteryData || user.topicMasteryData.length === 0)) ? (
+                <div className="h-36 flex flex-col items-center justify-center text-center p-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <Award className="w-7 h-7 text-slate-300 mb-1.5" />
+                  <span className="text-xs font-bold text-slate-700">No Topic Assessments Yet</span>
+                  <p className="text-[10px] text-slate-400 mt-0.5 max-w-[200px]">
+                    Take practice tests in your enrolled courses to generate your competency radar.
+                  </p>
+                </div>
+              ) : (
+                <div className="h-36">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="65%" data={(user.topicMasteryData?.length ? user.topicMasteryData : [
+                      { subject: 'C Systems', mastery: 74, neuralStability: 82 },
+                      { subject: 'Data Structures', mastery: 88, neuralStability: 86 },
+                      { subject: 'DBMS', mastery: 65, neuralStability: 78 },
+                      { subject: 'Probability', mastery: 42, neuralStability: 64 },
+                      { subject: 'Functions', mastery: 91, neuralStability: 88 },
+                      { subject: 'Pointers', mastery: 38, neuralStability: 79 },
+                    ]) as any}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8.5, fill: '#64748b', fontWeight: 600 }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar
+                        name="Demonstrated Mastery"
+                        dataKey="mastery"
+                        stroke="#8b5cf6"
+                        fill="#8b5cf6"
+                        fillOpacity={0.25}
+                        strokeWidth={2}
+                      />
+                      <Radar
+                        name="Observed Neural Focus"
+                        dataKey="neuralStability"
+                        stroke="#06b6d4"
+                        fill="#06b6d4"
+                        fillOpacity={0.15}
+                        strokeWidth={1.5}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100">
-              <span className="text-slate-500 font-medium truncate">Peak: Functions (91% / 88%)</span>
-              <span className="font-bold text-rose-500 shrink-0">High Load: Pointers (38% / 79%)</span>
+              <span className="text-slate-500 font-medium truncate">
+                {user.strongestTopic ? `Peak: ${user.strongestTopic.name} (${user.strongestTopic.mastery}%)` : (isDemo ? 'Peak: Functions (91% / 88%)' : 'No topics tested yet')}
+              </span>
+              <span className="font-bold text-rose-500 shrink-0">
+                {recommendedTopic ? `Drill: ${recommendedTopic.name} (${recommendedTopic.mastery}%)` : (isDemo ? 'High Load: Pointers (38% / 79%)' : 'Awaiting diagnostic')}
+              </span>
             </div>
           </div>
 
@@ -504,28 +574,43 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                 </div>
                 <Clock className="w-5 h-5 text-emerald-500 shrink-0" />
               </div>
-              <div className="h-36">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={user.dailyStudyHours?.length ? user.dailyStudyHours : [
-                    { day: 'Mon', hours: 2.0 }, { day: 'Tue', hours: 1.5 }, { day: 'Wed', hours: 3.0 },
-                    { day: 'Thu', hours: 1.8 }, { day: 'Fri', hours: 2.5 }, { day: 'Sat', hours: 1.0 }, { day: 'Sun', hours: 2.2 },
-                  ]} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                    <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
-                      {[0, 1, 2, 3, 4, 5, 6].map((_, index) => (
-                        <Cell key={index} fill={index === 2 ? '#10b981' : '#6366f1'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+
+              {(!isDemo && (!user.dailyStudyHours || user.dailyStudyHours.length === 0)) ? (
+                <div className="h-36 flex flex-col items-center justify-center text-center p-3 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <Clock className="w-7 h-7 text-slate-300 mb-1.5" />
+                  <span className="text-xs font-bold text-slate-700">0.0 Study Hours Logged</span>
+                  <p className="text-[10px] text-slate-400 mt-0.5 max-w-[200px]">
+                    Focus hours will log here as you run the Pomodoro timer.
+                  </p>
+                </div>
+              ) : (
+                <div className="h-36">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={user.dailyStudyHours?.length ? user.dailyStudyHours : [
+                      { day: 'Mon', hours: 2.0 }, { day: 'Tue', hours: 1.5 }, { day: 'Wed', hours: 3.0 },
+                      { day: 'Thu', hours: 1.8 }, { day: 'Fri', hours: 2.5 }, { day: 'Sat', hours: 1.0 }, { day: 'Sun', hours: 2.2 },
+                    ]} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                      <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} />
+                      <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                      <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
+                        {[0, 1, 2, 3, 4, 5, 6].map((_, index) => (
+                          <Cell key={index} fill={index === 2 ? '#10b981' : '#6366f1'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between text-xs mt-3 pt-3 border-t border-slate-100">
-              <span className="text-slate-500">Peak day: Wednesday</span>
-              <span className="font-bold text-emerald-600">Total: 14.0 hrs</span>
+              <span className="text-slate-500">
+                {user.dailyStudyHours?.length ? 'Peak day: Wednesday' : 'Weekly tracker'}
+              </span>
+              <span className="font-bold text-emerald-600">
+                {user.dailyStudyHours?.length ? 'Total: 14.0 hrs' : (isDemo ? 'Total: 14.0 hrs' : 'Total: 0.0 hrs')}
+              </span>
             </div>
           </div>
 

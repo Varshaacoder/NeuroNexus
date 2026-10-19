@@ -288,6 +288,7 @@ export default function App() {
             setSelectedNeuroSessionId(sessId);
             setCurrentPage('neuro-analysis');
           }}
+          onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}
         />
       )}
       {openModal === 'aiClassroom' && (
@@ -300,7 +301,12 @@ export default function App() {
         <PracticeQuestionsModal isOpen topic={practiceTopic} onClose={closeModal} />
       )}
       {openModal === 'pomodoro' && (
-        <PomodoroModal isOpen onClose={closeModal} />
+        <PomodoroModal
+          isOpen
+          onClose={closeModal}
+          user={currentUser}
+          onUserUpdated={(updatedUser) => setCurrentUser(updatedUser)}
+        />
       )}
       {selectedCourse && (
         <CourseDetailModal

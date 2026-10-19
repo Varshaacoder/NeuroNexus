@@ -53,7 +53,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
       institution: 'Apex Institute of Science & Technology',
       department: deptVal || 'Computer Science & Engineering',
       semester: semVal || 'Semester I',
-      enrolledCourses: [],
+      enrolledCourses: ['CS201', 'CS202'],
       rank: 'Bronze Scholar',
       rankScore: 0,
       overallProgress: 0,

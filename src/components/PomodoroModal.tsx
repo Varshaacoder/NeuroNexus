@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, RotateCcw, SkipForward, Timer, Clock, Zap } from 'lucide-react';
+import type { UserProfile } from '../types';
+import { updateUserAcademicRecord } from '../utils/neuroSessionStore';
 
 interface PomodoroModalProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: UserProfile;
+  onUserUpdated?: (user: UserProfile) => void;
 }
 
-const PomodoroModal: React.FC<PomodoroModalProps> = ({ isOpen, onClose }) => {
+const PomodoroModal: React.FC<PomodoroModalProps> = ({ isOpen, onClose, user, onUserUpdated }) => {
   const [activeTab, setActiveTab] = useState<'pomodoro' | 'countdown' | 'stopwatch'>('pomodoro');
 
   // Pomodoro State
@@ -101,6 +105,14 @@ const PomodoroModal: React.FC<PomodoroModalProps> = ({ isOpen, onClose }) => {
       setPomoSessionCount(prev => prev + 1);
       setPomoMode('break');
       setPomoTimeLeft(5 * 60);
+      if (user) {
+        const updated = updateUserAcademicRecord(user.id, {
+          pomodoroCountWeek: (user.pomodoroCountWeek || 0) + 1,
+        });
+        if (updated && onUserUpdated) {
+          onUserUpdated(updated);
+        }
+      }
     } else {
       setPomoMode('work');
       setPomoTimeLeft(25 * 60);

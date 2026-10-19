@@ -1,16 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Brain, Activity, Sparkles, Clock, Calendar, ShieldCheck,
   AlertTriangle, CheckCircle2, Zap, BarChart2, Filter, ArrowUpRight,
-  HelpCircle, Info, TrendingUp, RefreshCw, Play, FileCheck2, BookOpen,
-  ChevronDown, Cpu, ShieldAlert, Award
+  HelpCircle, Info, TrendingUp, RefreshCw, Play, Square, FileCheck2, BookOpen,
+  ChevronDown, Cpu, ShieldAlert, Award, Radio, CheckCircle, Wifi, WifiOff
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, BarChart, Bar, Cell, LineChart, Line
 } from 'recharts';
 import type { UserProfile, LearningSession, FocusTimePoint } from '../types';
-import { getStudentSessions, getWeeklyNeuralProgress } from '../utils/neuroSessionStore';
+import { getStudentSessions, getWeeklyNeuralProgress, isDemoUser, saveStudentSession } from '../utils/neuroSessionStore';
+import { eegService, type EEGDeviceStatus } from '../services/eegService';
 
 interface NeuroAnalysisPageProps {
   user: UserProfile;
@@ -27,8 +28,26 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
   onStartStudySession,
   onOpenHardwareManager,
 }) => {
-  const sessions = useMemo(() => getStudentSessions(user.id), [user.id]);
-  const weeklyReport = useMemo(() => getWeeklyNeuralProgress(user.id), [user.id]);
+  const isDemo = isDemoUser(user.id, user.email);
+  const [sessions, setSessions] = useState<LearningSession[]>(() => getStudentSessions(user.id));
+  const weeklyReport = useMemo(() => getWeeklyNeuralProgress(user.id), [user.id, sessions]);
+
+  // EEG Hardware Status Tracking
+  const [eegStatus, setEegStatus] = useState<EEGDeviceStatus>(() => eegService.getStatus());
+  const [isLiveRecording, setIsLiveRecording] = useState(false);
+  const [liveRecordingSeconds, setLiveRecordingSeconds] = useState(0);
+  const [hasRecordedSession, setHasRecordedSession] = useState(false);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    const unsub = eegService.onStatusChange((status) => {
+      setEegStatus(status);
+      if (status.state === 'disconnected' && isLiveRecording) {
+        handleStopRecording();
+      }
+    });
+    return () => unsub();
+  }, [isLiveRecording]);
 
   // Selected session state
   const [selectedSessionId, setSelectedSessionId] = useState<string>(() => {
@@ -43,6 +62,123 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
   const [filterType, setFilterType] = useState<'all' | 'study' | 'quiz' | 'college_test'>('all');
   const [filterCourse, setFilterCourse] = useState<string>('all');
   const [filterEegOnly, setFilterEegOnly] = useState<boolean>(false);
+
+  // Compute active hardware step (1 through 6)
+  const connectionStateInfo = useMemo(() => {
+    if (eegStatus.state === 'disconnected') {
+      if (hasRecordedSession || eegStatus.lastSampleTime) {
+        return {
+          step: 6,
+          label: 'State 6: Recording stopped or disconnected',
+          badge: 'Recording Complete / Disconnected',
+          color: 'text-slate-700 bg-slate-100 border-slate-300',
+          detail: 'Hardware recording completed or device disconnected. Data preserved.'
+        };
+      }
+      return {
+        step: 1,
+        label: 'State 1: Device not connected',
+        badge: 'Not Connected',
+        color: 'text-rose-700 bg-rose-50 border-rose-200',
+        detail: 'No EEG serial or WebSocket bridge currently active. Connect hardware to begin live neural focus acquisition.'
+      };
+    }
+    if (eegStatus.state === 'connecting') {
+      return {
+        step: 2,
+        label: 'State 2: Connection requested or in progress',
+        badge: 'Connecting...',
+        color: 'text-amber-700 bg-amber-50 border-amber-200',
+        detail: 'Opening port handshake and negotiating baud rate (115200 bps).'
+      };
+    }
+    if (eegStatus.state === 'connected') {
+      if (eegStatus.samplesReceived === 0) {
+        return {
+          step: 3,
+          label: 'State 3: Device connected, but no valid EEG samples received',
+          badge: 'Awaiting Samples',
+          color: 'text-amber-700 bg-amber-50 border-amber-200',
+          detail: 'Hardware port established. Microcontroller TX transmission buffer is initializing.'
+        };
+      }
+      if (eegStatus.signalQualityStatus === 'Poor' || eegStatus.droppedPackets > 50) {
+        return {
+          step: 4,
+          label: 'State 4: Signal received, but signal quality is insufficient',
+          badge: 'Insufficient Quality (Noise / Loose)',
+          color: 'text-amber-800 bg-amber-100 border-amber-300',
+          detail: 'Electrode impedance high or loose skin contact. Reseat FP1/FP2 electrodes to ensure valid signal.'
+        };
+      }
+      return {
+        step: 5,
+        label: 'State 5: Valid EEG data received and recording is available',
+        badge: 'Valid Data & Ready',
+        color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+        detail: 'Physiological voltage validated within ±500µV. Ready to begin live focus recording.'
+      };
+    }
+    if (eegStatus.state === 'streaming') {
+      if (eegStatus.signalQualityStatus === 'Poor') {
+        return {
+          step: 4,
+          label: 'State 4: Signal received, but signal quality is insufficient',
+          badge: 'High Noise During Stream',
+          color: 'text-amber-800 bg-amber-100 border-amber-300',
+          detail: 'Excessive motion artifact or mains interference detected during streaming.'
+        };
+      }
+      return {
+        step: 5,
+        label: 'State 5: Valid EEG data received and recording is available',
+        badge: isLiveRecording ? 'Streaming & Recording' : 'Valid Data & Ready',
+        color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+        detail: `${eegStatus.samplesReceived} samples received at ${eegStatus.samplingRateHz} Hz. Frontal acquisition active.`
+      };
+    }
+    return {
+      step: 1,
+      label: 'State 1: Device not connected',
+      badge: 'Not Connected',
+      color: 'text-rose-700 bg-rose-50 border-rose-200',
+      detail: 'No EEG device attached.'
+    };
+  }, [eegStatus, isLiveRecording, hasRecordedSession]);
+
+  // Live Recording Handlers
+  const handleStartRecording = () => {
+    eegService.startRecording({
+      userId: user.id,
+      course: 'CS201 C Programming & Systems',
+      topic: 'Live BioAmp Acquisition Study',
+      type: 'study',
+      title: 'Live BioAmp EXG Neural Focus Session',
+    });
+    setIsLiveRecording(true);
+    setLiveRecordingSeconds(0);
+    recordingTimerRef.current = setInterval(() => {
+      setLiveRecordingSeconds(s => s + 1);
+    }, 1000);
+  };
+
+  const handleStopRecording = () => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsLiveRecording(false);
+    setHasRecordedSession(true);
+    const recorded = eegService.stopRecording();
+    if (recorded) {
+      saveStudentSession(user.id, recorded);
+      const updated = getStudentSessions(user.id);
+      setSessions(updated);
+      setSelectedSessionId(recorded.id);
+    }
+  };
+
+  // Check if student has valid EEG sessions
+  const hasValidEegSession = useMemo(() => {
+    return sessions.some(s => s.hasEegData && (!s.isSimulated || isDemo));
+  }, [sessions, isDemo]);
 
   const selectedSession: LearningSession | undefined = sessions.find(s => s.id === selectedSessionId) || sessions[0];
 
@@ -97,10 +233,25 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
 
         {/* Global Neuro Status Strip */}
         <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-300 font-medium">Acquisition Target:</span>
-            <span className="font-bold text-white">BioAmp EXG Pill (Frontal Montage: FP1, FP2, A1 Ref)</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                eegStatus.state === 'streaming' || eegStatus.state === 'connected'
+                  ? 'bg-emerald-400 animate-pulse'
+                  : 'bg-rose-400'
+              }`} />
+              <span className="text-slate-300 font-medium">Device Status:</span>
+              <span className="font-bold text-white">
+                {eegStatus.state === 'disconnected' ? 'Not connected' : eegStatus.state.toUpperCase()}
+              </span>
+            </div>
+            <span className="text-slate-600">|</span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-300 font-medium">Recording Status:</span>
+              <span className={`font-bold ${isLiveRecording ? 'text-amber-400 animate-pulse' : 'text-slate-300'}`}>
+                {isLiveRecording ? `Recording (${Math.floor(liveRecordingSeconds / 60)}m ${liveRecordingSeconds % 60}s)` : 'Not recording'}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
@@ -109,39 +260,172 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 font-bold text-xs transition-colors shadow-2xs"
             >
               <Cpu className="w-3.5 h-3.5" />
-              <span>BioAmp Hardware Manager</span>
+              <span>Connect / Manage BioAmp</span>
             </button>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold text-[11px]">
-              <Info className="w-3.5 h-3.5" />
-              <span>Demo Mode Active: Synthetic Waveforms Clearly Labeled (Not Live EEG)</span>
-            </div>
+            {isDemo ? (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold text-[11px]">
+                <Info className="w-3.5 h-3.5" />
+                <span>Demo Mode Active [Demo Data — Not Live EEG]</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold text-[11px]">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Zero Synthetic Fabrication Active</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── STAGE 2.1: LATEST / SELECTED LEARNING SESSION (PROMINENT HERO) ──── */}
-      {sessions.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-12 text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-600">
-            <Brain className="w-7 h-7" />
+      {/* ── HARDWARE ACCESS CONTROL & 6-STATE CONNECTION PANEL ────────────────── */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-600" />
+              <h3 className="font-black text-slate-900 text-base">EEG Hardware Connection & Acquisition Gate</h3>
+              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${connectionStateInfo.color}`}>
+                {connectionStateInfo.badge}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 max-w-3xl leading-relaxed">
+              A compatible EEG device (such as the BioAmp EXG Pill) must be connected before live neural focus analysis is available. Academic learning features, course curriculum, mock tests, and AI Classroom remain fully available without EEG hardware.
+            </p>
           </div>
-          <h3 className="text-base font-bold text-slate-900">No Neural Sessions Recorded Yet</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            As you begin Pomodoro study sessions or complete mock tests, your Focus Dynamics timeline, signal quality metrics, and AI recommendations will populate here automatically.
-          </p>
-          <div className="pt-2 flex justify-center gap-3">
+
+          <div className="flex items-center gap-2 shrink-0">
+            {eegStatus.state === 'disconnected' ? (
+              <button
+                onClick={onOpenHardwareManager}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm"
+              >
+                <Cpu className="w-4 h-4" />
+                <span>Connect EEG Device</span>
+              </button>
+            ) : connectionStateInfo.step === 5 ? (
+              !isLiveRecording ? (
+                <button
+                  onClick={handleStartRecording}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-sm shadow-emerald-500/20"
+                >
+                  <Play className="w-4 h-4" />
+                  <span>Start Hardware EEG Recording</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleStopRecording}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-2 transition-all animate-pulse"
+                >
+                  <Square className="w-4 h-4" />
+                  <span>Stop & Save Session</span>
+                </button>
+              )
+            ) : (
+              <button
+                onClick={onOpenHardwareManager}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 border border-slate-200 transition-all"
+              >
+                <Activity className="w-4 h-4" />
+                <span>Hardware Diagnostics</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 6 Distinct Hardware Connection States */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+            <span>Hardware Diagnostics & Communication Protocol (6-Stage Verification):</span>
+            <span className="text-indigo-600 font-semibold">{connectionStateInfo.label}</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+            {[
+              { num: 1, title: 'State 1', desc: 'Device not connected', subtitle: 'Awaiting connection' },
+              { num: 2, title: 'State 2', desc: 'Connection in progress', subtitle: 'Handshake / baud lock' },
+              { num: 3, title: 'State 3', desc: 'Device connected', subtitle: 'Awaiting valid samples' },
+              { num: 4, title: 'State 4', desc: 'Signal received', subtitle: 'Quality insufficient (noise)' },
+              { num: 5, title: 'State 5', desc: 'Valid data streaming', subtitle: 'Ready to record' },
+              { num: 6, title: 'State 6', desc: 'Recording complete', subtitle: 'Finalized / disconnected' },
+            ].map(stage => {
+              const isActive = connectionStateInfo.step === stage.num;
+              return (
+                <div
+                  key={stage.num}
+                  className={`p-3 rounded-2xl border transition-all text-left flex flex-col justify-between ${
+                    isActive
+                      ? 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-400/20 shadow-xs'
+                      : stage.num < connectionStateInfo.step
+                      ? 'bg-slate-50/60 border-slate-200 text-slate-700'
+                      : 'bg-white border-slate-200/80 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                      isActive ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {stage.title}
+                    </span>
+                    {isActive && <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping" />}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 leading-snug">{stage.desc}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">{stage.subtitle}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Current Diagnostic Context Box */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-indigo-600 shrink-0" />
+              <span className="text-slate-700 font-medium">
+                <strong>Current Status Detail:</strong> {connectionStateInfo.detail}
+              </span>
+            </div>
+            {eegStatus.state === 'streaming' && (
+              <div className="flex items-center gap-3 shrink-0 font-bold text-slate-700">
+                <span>Samples: {eegStatus.samplesReceived}</span>
+                <span>Dropped: {eegStatus.droppedPackets}</span>
+                <span className="text-emerald-700">SQI: {eegStatus.signalQualityStatus}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── NEURAL SESSIONS CONTENT: HONEST EMPTY STATE OR LIVE/DEMO DATA ───── */}
+      {!hasValidEegSession ? (
+        <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-10 text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-600">
+            <Brain className="w-8 h-8" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="text-base font-bold text-slate-900">No EEG Sessions Recorded Yet</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Focus Dynamics, Alpha/Theta ratios, and cognitive workload curves will be computed from genuine physiological recordings once hardware is connected and a session is captured.
+            </p>
+            <p className="text-xs text-slate-400">
+              Academic learning features, course syllabus, mock tests, and AI Classroom remain 100% functional without hardware.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-wrap justify-center gap-3">
             <button
-              onClick={onStartStudySession}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold"
+              onClick={onOpenHardwareManager}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
             >
-              Start First Study Session
+              <Cpu className="w-4 h-4" />
+              <span>Connect BioAmp Device</span>
             </button>
             <button
               onClick={onNavigateToTests}
-              className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold"
+              className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold flex items-center gap-1.5"
             >
-              Take a Mock Test
+              <FileCheck2 className="w-4 h-4" />
+              <span>Take Academic Mock Test</span>
             </button>
           </div>
         </div>
@@ -159,9 +443,13 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                   <span className="text-xs font-bold text-slate-500">{selectedSession.startTime}</span>
                   <span className="text-slate-300">•</span>
                   <span className="text-xs font-semibold text-slate-600">{selectedSession.course}</span>
-                  {selectedSession.isSimulated && (
+                  {selectedSession.isSimulated ? (
                     <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300">
-                      Demo Data — Not Live EEG
+                      [Demo Data — Not Live EEG]
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300">
+                      [Hardware EEG Measurement — Live BioAmp EXG]
                     </span>
                   )}
                 </div>
@@ -239,7 +527,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
               </div>
             </div>
 
-            {/* ── STAGE 2.2: FOCUS DYNAMICS TIME-SERIES CHART ───────────────────── */}
+            {/* ── FOCUS DYNAMICS TIME-SERIES CHART ───────────────────────────── */}
             {selectedSession.hasEegData && selectedSession.focusDynamics && selectedSession.focusDynamics.length > 0 ? (
               <div className="space-y-3 pt-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -421,7 +709,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
               </div>
             )}
 
-            {/* ── STAGE 2.4: DETAILED SESSION REPORT & HARDWARE METRICS ────────── */}
+            {/* ── DETAILED SESSION REPORT & HARDWARE METRICS ─────────────────── */}
             {selectedSession.hasEegData && selectedSession.neuralMetrics && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-4 border-t border-slate-100">
                 
@@ -465,104 +753,92 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/60">
                       <span className="text-slate-600">Frontal Alpha Asymmetry:</span>
-                      <span className="font-black text-slate-900">{selectedSession.neuralMetrics.alphaAsymmetry} (Positive = Approach Motivation)</span>
+                      <span className="font-black text-slate-900">{selectedSession.neuralMetrics.alphaAsymmetry > 0 ? `+${selectedSession.neuralMetrics.alphaAsymmetry}` : selectedSession.neuralMetrics.alphaAsymmetry} (Positive = Approach Motivation)</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-slate-200/60">
-                      <span className="text-slate-600">Sample Entropy (SampEn):</span>
-                      <span className="font-black text-slate-900">{selectedSession.neuralMetrics.sampleEntropy} (Band-limited Complexity)</span>
+                      <span className="text-slate-600">Sample Entropy (Complexity):</span>
+                      <span className="font-black text-slate-900">{selectedSession.neuralMetrics.sampleEntropy}</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-slate-600">Imaginary Frontal Coherence:</span>
-                      <span className="font-black text-slate-900">{selectedSession.neuralMetrics.coherence} (Interhemispheric Coupling)</span>
+                      <span className="text-slate-600">FP1-FP2 Inter-hemispheric Coherence:</span>
+                      <span className="font-black text-slate-900">{selectedSession.neuralMetrics.coherence}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Column: AI Evidence-Based Study Recommendations */}
+                {/* Right Column: AI Insights & Signal Integrity */}
                 <div className="space-y-4">
                   <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-purple-600" />
-                    <span>Evidence-Based AI Study Recommendations</span>
+                    <span>Neural Evidence & Personalized Insights</span>
                   </h4>
 
                   <div className="space-y-2.5">
                     {selectedSession.aiRecommendations?.map((rec) => (
-                      <div
-                        key={rec.id}
-                        className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50/50 to-indigo-50/50 border border-purple-100 space-y-1.5 text-xs"
-                      >
-                        <div className="flex items-center gap-2 font-bold text-purple-900">
-                          <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" />
+                      <div key={rec.id} className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-xs space-y-1">
+                        <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
                           <span>{rec.recommendation}</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 pl-6 leading-relaxed">
-                          <strong>Scientific Evidence:</strong> {rec.evidence}
+                        <p className="text-slate-600 pl-5 text-[11px] leading-relaxed">
+                          <strong>Biometric Evidence:</strong> {rec.evidence}
                         </p>
                       </div>
                     ))}
                   </div>
 
-                  {selectedSession.topicPerformance && (
-                    <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                      <span className="text-xs font-bold text-slate-800">Topic-Level Assessment Breakdown:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedSession.topicPerformance.map((tp, idx) => (
-                          <span
-                            key={idx}
-                            className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${
-                              tp.correct
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}
-                          >
-                            {tp.topic}: {tp.correct ? '100%' : '0%'}
-                          </span>
-                        ))}
-                      </div>
+                  {/* Signal Integrity Disclaimer Card */}
+                  <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 text-xs space-y-1">
+                    <div className="font-bold text-amber-900 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-amber-700" />
+                      <span>Non-Diagnostic Academic Research Metric</span>
                     </div>
-                  )}
+                    <p className="text-amber-800/80 text-[11px] leading-relaxed">
+                      NeuroNexus analytics reflect relative changes in cognitive workload. They do not constitute clinical neurological diagnosis, medical diagnosis of ADHD, or clinical cognitive evaluation.
+                    </p>
+                  </div>
                 </div>
-
               </div>
             )}
-
           </div>
-
         </div>
       ) : null}
 
-      {/* ── STAGE 3.2: WEEKLY NEURAL PROGRESS ANALYSIS ───────────────────────── */}
+      {/* ── STAGE 2.3: WEEKLY NEURAL PROGRESS & TREND COMPARISON ───────────── */}
       <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
-                <BarChart2 className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-base text-slate-900">Weekly Neural Progress & Trend Analysis</h3>
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 mb-1">
+              <Activity className="w-3.5 h-3.5" />
+              <span>Continuous Tracking</span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Aggregated attention stability and academic correlation across verified comparable sessions
+            <h3 className="font-black text-lg text-slate-900 tracking-tight">
+              Weekly Neural Progress & Topic Stability
+            </h3>
+            <p className="text-xs text-slate-500">
+              Aggregated across eligible study sessions and test attempts with genuine biometric tracking.
             </p>
           </div>
 
-          <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
-            {weeklyReport.weekLabel}
-          </span>
+          <div className="text-right">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+              {weeklyReport.weekLabel}
+            </span>
+          </div>
         </div>
 
         {weeklyReport.hasSufficientData ? (
           <div className="space-y-5">
-            {/* 3 Metric Summary Cards */}
+            {/* 3 Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100">
-                <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Weekly Focus Average</span>
+                <span className="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Mean Weekly Attention</span>
                 <div className="text-2xl font-black text-indigo-950 mt-1">
                   {weeklyReport.avgAttentionScore}%
                 </div>
                 {weeklyReport.comparisonWithPrevious && (
-                  <div className="text-xs font-bold text-emerald-600 mt-1 flex items-center gap-1">
-                    <TrendingUp className="w-3.5 h-3.5" />
+                  <div className="text-xs font-bold text-emerald-600 flex items-center gap-1 mt-1">
+                    <ArrowUpRight className="w-3.5 h-3.5" />
                     <span>+{weeklyReport.comparisonWithPrevious.percentageChange}% vs Last Week</span>
                   </div>
                 )}
@@ -686,7 +962,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
         {/* Sessions Table / List */}
         {filteredSessions.length === 0 ? (
           <div className="p-8 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-2xl">
-            No sessions match the current filter selection.
+            No sessions match the current filter selection. Academic mock tests and study sessions appear here once completed.
           </div>
         ) : (
           <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
@@ -708,10 +984,14 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                     <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-slate-200 text-slate-700">
                       {session.type}
                     </span>
-                    {session.hasEegData && (
+                    {session.hasEegData ? (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 flex items-center gap-1">
                         <Brain className="w-3 h-3" />
-                        EEG
+                        {session.isSimulated ? 'EEG (Demo)' : 'EEG (Hardware)'}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                        Academic Only (No EEG)
                       </span>
                     )}
                   </div>

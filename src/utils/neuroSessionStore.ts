@@ -344,6 +344,33 @@ export function saveStudentSession(userId: string, session: LearningSession): vo
   }
 }
 
+export function updateUserAcademicRecord(userId: string, updates: any): any {
+  try {
+    const storedUserStr = localStorage.getItem('campus_qa_user');
+    let activeUser = storedUserStr ? JSON.parse(storedUserStr) : null;
+    if (activeUser && activeUser.id === userId) {
+      activeUser = { ...activeUser, ...updates };
+      localStorage.setItem('campus_qa_user', JSON.stringify(activeUser));
+    }
+
+    const regUsersStr = localStorage.getItem('campus_qa_registered_users');
+    if (regUsersStr) {
+      const usersMap = JSON.parse(regUsersStr);
+      for (const emailKey of Object.keys(usersMap)) {
+        if (usersMap[emailKey].id === userId) {
+          usersMap[emailKey] = { ...usersMap[emailKey], ...updates };
+          localStorage.setItem('campus_qa_registered_users', JSON.stringify(usersMap));
+          break;
+        }
+      }
+    }
+    return activeUser;
+  } catch (err) {
+    console.error('Failed to update user academic record:', err);
+    return null;
+  }
+}
+
 export function getCollegeScheduledTests(): CollegeScheduledTest[] {
   try {
     const stored = localStorage.getItem('neuronexus_college_tests');

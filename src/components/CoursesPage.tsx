@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { AVAILABLE_COURSES } from '../mockData';
 import { BookOpen, Users, Clock, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { isDemoUser } from '../utils/neuroSessionStore';
 
 export const CoursesPage: React.FC<{ user: UserProfile; onSelectCourse?: (course: any) => void }> = ({ user, onSelectCourse }) => {
+  const isDemo = isDemoUser(user.id, user.email);
   const [activeTab, setActiveTab] = useState<'my_courses' | 'explore'>('my_courses');
 
   const colorMap: Record<string, string> = {
@@ -70,81 +72,100 @@ export const CoursesPage: React.FC<{ user: UserProfile; onSelectCourse?: (course
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedCourses.map(course => (
-            <div key={course.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-              <div className={`h-2 w-full ${colorMap[course.color] || 'bg-slate-500'}`} />
-              
-              <div className="p-5 flex-grow flex flex-col">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-semibold mb-2 ${bgLightMap[course.color] || 'bg-slate-50'} ${textMap[course.color] || 'text-slate-700'}`}>
-                      {course.code}
-                    </span>
-                    <h3 className="text-xl font-bold text-slate-900 leading-tight">{course.name}</h3>
-                  </div>
-                  {user.enrolledCourses.includes(course.id) && (
-                    <span className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-medium">
-                      <CheckCircle2 size={14} />
-                      Enrolled
-                    </span>
-                  )}
-                </div>
+          {displayedCourses.map(course => {
+            const isEnrolled = user.enrolledCourses.includes(course.id);
+            // Calculate honest course progress
+            const effectiveProgress = isDemo
+              ? (course.progress ?? 0)
+              : isEnrolled
+              ? (user.overallProgress ?? 0)
+              : 0;
 
-                <div className="space-y-2 mb-6">
-                  <div className="flex items-center text-sm text-slate-600">
-                    <Users size={16} className="mr-2 text-slate-400" />
-                    <span>Prof. {course.faculty}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-slate-600">
-                    <BookOpen size={16} className="mr-2 text-slate-400" />
-                    <span>{course.credits} Credits</span>
-                  </div>
-                </div>
+            // Filter weak topics honestly
+            const effectiveWeakTopics = isDemo
+              ? (course.weakTopics || [])
+              : (course.weakTopics || []).filter(t => (user.weakTopics || []).some((w: any) => (typeof w === 'string' ? w === t : w.name === t)));
 
-                {user.enrolledCourses.includes(course.id) && course.progress !== undefined && (
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-slate-700">Progress</span>
-                      <span className="text-slate-600">{course.progress}%</span>
-                    </div>
-                    <div className="w-full bg-slate-100 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full ${colorMap[course.color] || 'bg-slate-500'}`}
-                        style={{ width: `${course.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {course.weakTopics && course.weakTopics.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Needs Attention</p>
-                    <div className="flex flex-wrap gap-2">
-                      {course.weakTopics.map((topic, i) => (
-                        <span key={i} className="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs font-medium border border-rose-100">
-                          {topic}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            return (
+              <div key={course.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
+                <div className={`h-2 w-full ${colorMap[course.color] || 'bg-slate-500'}`} />
                 
-                <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center text-xs text-slate-500">
-                    <Clock size={14} className="mr-1" />
-                    Next: {course.nextClass || 'TBA'}
+                <div className="p-5 flex-grow flex flex-col">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-semibold mb-2 ${bgLightMap[course.color] || 'bg-slate-50'} ${textMap[course.color] || 'text-slate-700'}`}>
+                        {course.code}
+                      </span>
+                      <h3 className="text-xl font-bold text-slate-900 leading-tight">{course.name}</h3>
+                    </div>
+                    {isEnrolled && (
+                      <span className="flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-1 rounded-md text-xs font-medium">
+                        <CheckCircle2 size={14} />
+                        Enrolled
+                      </span>
+                    )}
                   </div>
-                  <button
-                    onClick={() => onSelectCourse?.(course)}
-                    className={`flex items-center gap-1 text-sm font-bold ${textMap[course.color] || 'text-slate-700'} hover:opacity-80 transition-opacity`}
-                  >
-                    Open Course & Topic Breakdown
-                    <ChevronRight size={16} />
-                  </button>
+
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center text-sm text-slate-600">
+                      <Users size={16} className="mr-2 text-slate-400" />
+                      <span>Prof. {course.faculty}</span>
+                    </div>
+                    <div className="flex items-center text-sm text-slate-600">
+                      <BookOpen size={16} className="mr-2 text-slate-400" />
+                      <span>{course.credits} Credits</span>
+                    </div>
+                  </div>
+
+                  {isEnrolled && (
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="font-medium text-slate-700">Course Completion</span>
+                        <span className="text-slate-600">{effectiveProgress}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${colorMap[course.color] || 'bg-slate-500'}`}
+                          style={{ width: `${effectiveProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {effectiveWeakTopics.length > 0 ? (
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Needs Attention</p>
+                      <div className="flex flex-wrap gap-2">
+                        {effectiveWeakTopics.map((topic, i) => (
+                          <span key={i} className="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs font-medium border border-rose-100">
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : isEnrolled ? (
+                    <div className="mb-4 text-xs text-slate-400">
+                      No weak topics identified yet. Complete tests to update diagnostics.
+                    </div>
+                  ) : null}
+                  
+                  <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center text-xs text-slate-500">
+                      <Clock size={14} className="mr-1" />
+                      Next: {course.nextClass || 'TBA'}
+                    </div>
+                    <button
+                      onClick={() => onSelectCourse?.(course)}
+                      className={`flex items-center gap-1 text-sm font-bold ${textMap[course.color] || 'text-slate-700'} hover:opacity-80 transition-opacity`}
+                    >
+                      Open Course & Topics
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         {displayedCourses.length === 0 && (

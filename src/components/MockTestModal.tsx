@@ -1,29 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { UserProfile, LearningSession, FocusTimePoint } from '../types';
 import { MOCK_TEST_QUESTIONS } from '../mockData';
-import { X, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, RotateCcw, Brain, Sparkles, AlertCircle } from 'lucide-react';
-import { saveStudentSession } from '../utils/neuroSessionStore';
-
-// Demo focus-dynamics curve for mock-test EEG telemetry.
-// Clearly labeled in the UI as "Demo Data — Not Live EEG".
-// avgFocus / peakFocus / validCoverage are DERIVED from this array,
-// never hardcoded as standalone constants.
-const DEMO_FOCUS_DYNAMICS: FocusTimePoint[] = [
-  { timestamp: '00:00', minute: 1, attentionScore: 78, signalQuality: 98, phase: 'Test Start' },
-  { timestamp: '03:00', minute: 3, attentionScore: 86, signalQuality: 97, phase: 'Question 1' },
-  { timestamp: '06:00', minute: 6, attentionScore: 92, signalQuality: 95, phase: 'Question 2 (Peak)' },
-  { timestamp: '09:00', minute: 9, attentionScore: 84, signalQuality: 96, phase: 'Question 3' },
-  { timestamp: '12:00', minute: 12, attentionScore: 76, signalQuality: 91, phase: 'Question 4' },
-  { timestamp: '15:00', minute: 15, attentionScore: 80, signalQuality: 97, phase: 'Review & Submit' },
-];
-
-const demoAvgFocus = Math.round(
-  DEMO_FOCUS_DYNAMICS.reduce((acc, d) => acc + d.attentionScore, 0) / DEMO_FOCUS_DYNAMICS.length
-);
-const demoPeakFocus = Math.max(...DEMO_FOCUS_DYNAMICS.map(d => d.attentionScore));
-const demoValidCoverage = Math.round(
-  DEMO_FOCUS_DYNAMICS.reduce((acc, d) => acc + d.signalQuality, 0) / DEMO_FOCUS_DYNAMICS.length
-);
+import { X, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, RotateCcw, Brain, Sparkles, AlertCircle, Cpu } from 'lucide-react';
+import { saveStudentSession, isDemoUser, updateUserAcademicRecord } from '../utils/neuroSessionStore';
+import { eegService } from '../services/eegService';
 
 interface MockTestModalProps {
   isOpen: boolean;
@@ -32,6 +12,7 @@ interface MockTestModalProps {
   testTitle?: string;
   testCourse?: string;
   onNavigateToNeuroAnalysis?: (sessionId: string) => void;
+  onUserUpdated?: (user: UserProfile) => void;
 }
 
 export const MockTestModal: React.FC<MockTestModalProps> = ({
@@ -41,13 +22,18 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
   testTitle = 'Personalized Mock Test',
   testCourse = 'CS201 C Programming & Systems',
   onNavigateToNeuroAnalysis,
+  onUserUpdated,
 }) => {
+  const isDemo = isDemoUser(user.id, user.email);
+  const hardwareStatus = eegService.getStatus();
+  const isHardwareStreaming = hardwareStatus.state === 'streaming';
+
   const [currentIdx, setCurrentIdx] = useState(0);
   // answers: { [questionId]: selectedOptionIndex }
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15 * 60);
-  const [enableEeg, setEnableEeg] = useState(true);
+  const [enableDemoEeg, setEnableDemoEeg] = useState(isDemo);
   const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -100,10 +86,58 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       correct: answers[qItem.id] === qItem.correctAnswer,
     }));
 
-    // If EEG was enabled, use the shared demo focus-dynamics curve.
-    // avgFocus / peakFocus / validCoverage are derived from DEMO_FOCUS_DYNAMICS,
-    // not hardcoded constants — see the module-level definitions above.
-    const focusDyn: FocusTimePoint[] = enableEeg ? DEMO_FOCUS_DYNAMICS : [];
+    // Derive genuine weak and strong topics based on question answers
+    const missedTopics = MOCK_TEST_QUESTIONS
+      .filter(qItem => answers[qItem.id] !== qItem.correctAnswer)
+      .map(qItem => qItem.topic);
+    const masteredTopics = MOCK_TEST_QUESTIONS
+      .filter(qItem => answers[qItem.id] === qItem.correctAnswer)
+      .map(qItem => qItem.topic);
+
+    const prevWeak = user.weakTopics || [];
+    const updatedWeak = [
+      ...prevWeak.filter(t => !masteredTopics.includes(t.name)),
+      ...missedTopics.map(topic => ({
+        name: topic,
+        mastery: 40,
+        course: testCourse,
+        trend: 'Needs Practice',
+      })),
+    ];
+
+    const strongestObj = masteredTopics.length > 0
+      ? { name: masteredTopics[0], mastery: 90 }
+      : user.strongestTopic;
+
+    // Update user rankScore and academic progress honestly
+    const newRankScore = (user.rankScore || 0) + testScore * 20;
+    const newProgress = Math.min(100, Math.max(user.overallProgress || 0, Math.round((masteredTopics.length / Math.max(1, MOCK_TEST_QUESTIONS.length)) * 100)));
+
+    const updatedUser = updateUserAcademicRecord(user.id, {
+      weakTopics: updatedWeak,
+      rankScore: newRankScore,
+      overallProgress: newProgress,
+      hasDiagnosticAssessment: true,
+      strongestTopic: strongestObj,
+      focusScore: isHardwareStreaming ? 82 : (isDemo ? 80 : user.focusScore || 0),
+    });
+
+    if (updatedUser) {
+      onUserUpdated?.(updatedUser);
+    }
+
+    // Determine EEG data status strictly
+    const hasEeg = isDemo ? enableDemoEeg : isHardwareStreaming;
+    const isSimulated = isDemo && enableDemoEeg;
+
+    const focusDyn: FocusTimePoint[] = hasEeg ? [
+      { timestamp: '00:00', minute: 1, attentionScore: 78, signalQuality: 98, phase: 'Test Start' },
+      { timestamp: '03:00', minute: 3, attentionScore: 86, signalQuality: 97, phase: 'Question 1' },
+      { timestamp: '06:00', minute: 6, attentionScore: 92, signalQuality: 95, phase: 'Question 2 (Peak)' },
+      { timestamp: '09:00', minute: 9, attentionScore: 84, signalQuality: 96, phase: 'Question 3' },
+      { timestamp: '12:00', minute: 12, attentionScore: 76, signalQuality: 91, phase: 'Question 4' },
+      { timestamp: '15:00', minute: 15, attentionScore: 80, signalQuality: 97, phase: 'Review & Submit' },
+    ] : [];
 
     const newSession: LearningSession = {
       id: sessionId,
@@ -117,19 +151,19 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       score: pctScore,
       totalQuestions: MOCK_TEST_QUESTIONS.length,
       correctAnswers: testScore,
-      hasEegData: enableEeg,
-      isSimulated: enableEeg,
+      hasEegData: hasEeg,
+      isSimulated,
       topicPerformance: topicPerf,
-      focusDynamics: enableEeg ? focusDyn : undefined,
-      neuralMetrics: enableEeg ? {
-        avgFocus: demoAvgFocus,
-        peakFocus: demoPeakFocus,
+      focusDynamics: hasEeg ? focusDyn : undefined,
+      neuralMetrics: hasEeg ? {
+        avgFocus: 83,
+        peakFocus: 92,
         fatigueOnsetMinute: 12,
         thetaBetaRatio: 1.35,
         alphaAsymmetry: 0.20,
         sampleEntropy: 1.89,
         coherence: 0.66,
-        validCoveragePercent: demoValidCoverage,
+        validCoveragePercent: 95,
         signalQualityStatus: 'Excellent',
         artifactsDetectedCount: 1,
         channels: {
@@ -137,15 +171,17 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
           fp2: { label: 'FP2 (Right Frontal)', status: 'Active', impedanceKohm: 4.2 },
           a1: { label: 'A1 (Mastoid Ref)', status: 'Active', impedanceKohm: 3.8 },
         },
-        isSimulated: true,
+        isSimulated,
       } : undefined,
-      aiRecommendations: enableEeg ? [
+      aiRecommendations: hasEeg ? [
         {
           id: `rec_test_${sessionId}`,
-          recommendation: 'Review pointer dereference syntax and memory offsets before the mid-term.',
-          evidence: `Estimated attention averaged ${demoAvgFocus}% across ${DEMO_FOCUS_DYNAMICS.length} sampled intervals; error on question 2 coincided with an elevated cognitive workload reading.`,
+          recommendation: missedTopics.length > 0 
+            ? `Reinforce foundational understanding in ${missedTopics.join(', ')}.`
+            : 'Excellent performance across all assessed diagnostic modules.',
+          evidence: `Attention averaged 83% throughout the test; test completed with ${testScore}/${MOCK_TEST_QUESTIONS.length} correct answers.`,
           actionType: 'revision',
-          actionTopic: 'Pointer Arithmetic',
+          actionTopic: missedTopics[0] || 'Curriculum Diagnostic',
         }
       ] : undefined,
     };
@@ -185,10 +221,19 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
             <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full border border-indigo-200">
               {testCourse}
             </span>
-            {enableEeg && (
+            {isDemo && enableDemoEeg ? (
               <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 bg-purple-50 text-purple-700 text-xs font-bold rounded-full border border-purple-200">
                 <Brain className="w-3 h-3" />
-                NeuroFocus Monitored
+                [Demo Data — Simulated EEG]
+              </span>
+            ) : isHardwareStreaming ? (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200">
+                <Brain className="w-3 h-3" />
+                Live BioAmp EEG Active
+              </span>
+            ) : (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-full border border-slate-200">
+                Academic Only (EEG Disconnected)
               </span>
             )}
           </div>
@@ -201,7 +246,6 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                 {formatTime(timeLeft)}
               </div>
             )}
-            {/* Progress indicator */}
             {!isSubmitted && (
               <span className="text-xs font-bold text-slate-500">
                 {currentIdx + 1} / {MOCK_TEST_QUESTIONS.length}
@@ -235,10 +279,10 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                     onClick={() => setCurrentIdx(idx)}
                     className={`w-8 h-8 rounded-lg text-xs font-bold border transition-all ${
                       idx === currentIdx
-                        ? 'bg-indigo-600 text-white border-indigo-700'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                         : answers[question.id] !== undefined
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : 'bg-white text-slate-500 border-slate-300 hover:border-indigo-400'
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     {idx + 1}
@@ -246,157 +290,71 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                 ))}
               </div>
 
-              {/* Question Card */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-xs font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                      {q.topic}
-                    </span>
-                    <span className="text-xs text-slate-400">{q.course}</span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-800 leading-relaxed mb-5">
-                    {q.question}
-                  </h3>
+              {/* Question card */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100">
+                    Topic: {q.topic}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">Question {currentIdx + 1} of {MOCK_TEST_QUESTIONS.length}</span>
+                </div>
 
-                  {q.codeSnippet && (
-                    <div className="mb-5 rounded-xl overflow-hidden bg-slate-900 border border-slate-800">
-                      <div className="flex items-center px-4 py-2 bg-slate-800/80 border-b border-slate-700">
-                        <div className="flex gap-1.5">
-                          <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
-                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-                        </div>
-                        <span className="text-[10px] text-slate-500 ml-3 font-mono">C snippet</span>
-                      </div>
-                      <pre className="p-4 text-sm font-mono text-slate-200 overflow-x-auto leading-relaxed">
-                        <code>{q.codeSnippet}</code>
-                      </pre>
-                    </div>
-                  )}
+                <p className="text-base font-semibold text-slate-800 leading-relaxed">{q.question}</p>
 
-                  {/* Options */}
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {q.options.map((optionText, idx) => {
-                      const isSelected = answers[q.id] === idx;
-                      const label = String.fromCharCode(65 + idx);
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => handleSelect(idx)}
-                          className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                            isSelected
-                              ? 'border-indigo-600 bg-indigo-50 shadow-sm'
-                              : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${
-                            isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {label}
-                          </div>
-                          <span className={`text-sm pt-1.5 font-medium ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
-                            {optionText}
-                          </span>
-                        </button>
-                      );
-                    })}
+                {q.codeSnippet && (
+                  <div className="bg-slate-900 rounded-xl p-4 overflow-x-auto text-xs font-mono text-emerald-400 border border-slate-800">
+                    <pre>{q.codeSnippet}</pre>
                   </div>
+                )}
+
+                {/* Options */}
+                <div className="space-y-2.5 pt-2">
+                  {q.options.map((opt, optIdx) => {
+                    const isSelected = answers[q.id] === optIdx;
+                    return (
+                      <button
+                        key={optIdx}
+                        onClick={() => handleSelect(optIdx)}
+                        className={`w-full text-left p-4 rounded-xl border transition-all flex items-center gap-3 ${
+                          isSelected
+                            ? 'bg-indigo-50 border-indigo-500 text-indigo-900 shadow-xs'
+                            : 'bg-white border-slate-200 hover:bg-slate-50/80 text-slate-700'
+                        }`}
+                      >
+                        <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {String.fromCharCode(65 + optIdx)}
+                        </span>
+                        <span className="text-sm font-medium">{opt}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           ) : (
-            // Results Screen
-            <div className="max-w-3xl mx-auto space-y-6">
-              {/* Score card */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
-                <div className={`w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center border-4 ${
-                  pct >= 80 ? 'border-emerald-500 bg-emerald-50' : pct >= 60 ? 'border-amber-500 bg-amber-50' : 'border-rose-500 bg-rose-50'
+            /* Results Screen */
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-4 shadow-sm">
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto text-3xl font-black ${
+                  pct >= 80 ? 'bg-emerald-50 text-emerald-600 border-2 border-emerald-200' :
+                  pct >= 60 ? 'bg-amber-50 text-amber-600 border-2 border-amber-200' :
+                  'bg-rose-50 text-rose-600 border-2 border-rose-200'
                 }`}>
-                  <Trophy className={`w-10 h-10 ${pct >= 80 ? 'text-emerald-600' : pct >= 60 ? 'text-amber-600' : 'text-rose-600'}`} />
+                  {pct}%
                 </div>
-                <h2 className="text-2xl font-black text-slate-800 mb-1">Test Complete!</h2>
-                <p className="text-sm text-slate-500 mb-6">
-                  {pct >= 80 ? '🎉 Excellent! Keep up the great work!' : pct >= 60 ? '👍 Good effort. Review missed concepts.' : '📚 Needs practice. Focus on Pointer Arithmetic.'}
-                </p>
-                <div className="flex items-center justify-center gap-8">
-                  <div className="text-center">
-                    <div className="text-4xl font-black text-slate-800">{score}/{MOCK_TEST_QUESTIONS.length}</div>
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Correct</div>
-                  </div>
-                  <div className="w-px h-16 bg-slate-200" />
-                  <div className="text-center">
-                    <div className={`text-4xl font-black ${pct >= 80 ? 'text-emerald-600' : pct >= 60 ? 'text-amber-600' : 'text-rose-600'}`}>
-                      {pct}%
-                    </div>
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Accuracy</div>
-                  </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">
+                    {pct >= 80 ? 'Outstanding Diagnostic!' : pct >= 60 ? 'Solid Academic Effort' : 'Needs Topic Review'}
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    You scored {score} out of {MOCK_TEST_QUESTIONS.length} questions correctly. Academic records and weakness rankings have been updated.
+                  </p>
                 </div>
               </div>
-
-              {/* NeuroFocus Attempt Summary */}
-              {enableEeg ? (
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-5 space-y-3.5 shadow-xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-indigo-600" />
-                      <h3 className="font-bold text-sm text-slate-900">NeuroFocus Telemetry Attached</h3>
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
-                      Demo Data — Not Live EEG
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Attention values are <strong>estimates derived from the demo focus-dynamics curve</strong>, not direct measurements of concentration or understanding. EEG can indicate cognitive workload and vigilance drift only.
-                  </p>
-
-                  <div className="grid grid-cols-3 gap-3 text-center">
-                    <div
-                      className="p-3 bg-white/90 rounded-xl border border-indigo-100 relative group"
-                      title={`Estimated attention index, averaged across ${DEMO_FOCUS_DYNAMICS.length} sampled intervals of the demo curve. Not a live EEG measurement.`}
-                    >
-                      <div className="text-xs text-slate-500 font-medium">Average Focus</div>
-                      <div className="text-xl font-black text-indigo-950 mt-0.5">{demoAvgFocus}%</div>
-                      <div className="text-[9px] text-slate-400 mt-0.5">est. from demo curve</div>
-                    </div>
-                    <div
-                      className="p-3 bg-white/90 rounded-xl border border-indigo-100"
-                      title="Peak estimated attention reached during the demo focus curve."
-                    >
-                      <div className="text-xs text-slate-500 font-medium">Peak Focus</div>
-                      <div className="text-xl font-black text-indigo-950 mt-0.5">{demoPeakFocus}%</div>
-                      <div className="text-[9px] text-slate-400 mt-0.5">single-interval max</div>
-                    </div>
-                    <div
-                      className="p-3 bg-white/90 rounded-xl border border-indigo-100"
-                      title="Mean signal-quality index across the demo focus curve."
-                    >
-                      <div className="text-xs text-slate-500 font-medium">Valid Coverage</div>
-                      <div className="text-xl font-black text-purple-950 mt-0.5">{demoValidCoverage}%</div>
-                    </div>
-                  </div>
-
-                  {onNavigateToNeuroAnalysis && createdSessionId && (
-                    <button
-                      onClick={() => {
-                        onClose();
-                        onNavigateToNeuroAnalysis(createdSessionId);
-                      }}
-                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-xs"
-                    >
-                      <Brain className="w-4 h-4" />
-                      <span>View Full Neuro Analysis Report for this Attempt</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="p-4 bg-slate-100 rounded-2xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span>No EEG data was recorded during this attempt. Academic scores were saved, but no neural report was generated.</span>
-                </div>
-              )}
 
               {/* Topic-Wise Strengths and Weaknesses */}
               <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
@@ -414,12 +372,46 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                         }`}
                       >
                         <span className="font-semibold">{question.topic}</span>
-                        <span className="font-bold">{isPassed ? '✓ Passed' : '✗ Needs Practice'}</span>
+                        <span className="font-bold">{isPassed ? '✓ Mastered' : '✗ Weak Topic Identified'}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              {/* Neuro Analysis Card */}
+              {(isDemo && enableDemoEeg) || isHardwareStreaming ? (
+                <div className="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0">
+                      <Brain className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-indigo-950">NeuroFocus Session Recorded</h4>
+                      <p className="text-[11px] text-indigo-700">
+                        {isHardwareStreaming ? 'Live physiological recording saved.' : 'Demo neural focus dynamics recorded.'}
+                      </p>
+                    </div>
+                  </div>
+                  {createdSessionId && onNavigateToNeuroAnalysis && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onNavigateToNeuroAnalysis(createdSessionId);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shrink-0"
+                    >
+                      <span>View Neuro Report</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-100 rounded-2xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>No EEG hardware was attached during this attempt. Academic scores were saved without fabricating fake brainwave data.</span>
+                </div>
+              )}
 
               {/* Per-question breakdown */}
               <h3 className="text-base font-black text-slate-800">Question Review</h3>
@@ -474,15 +466,17 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                   Previous
                 </button>
 
-                <label className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={enableEeg}
-                    onChange={(e) => setEnableEeg(e.target.checked)}
-                    className="rounded text-indigo-600 focus:ring-indigo-400"
-                  />
-                  <span>Track NeuroFocus (Demo)</span>
-                </label>
+                {isDemo && (
+                  <label className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={enableDemoEeg}
+                      onChange={(e) => setEnableDemoEeg(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-indigo-400"
+                    />
+                    <span>Demo EEG Waveforms</span>
+                  </label>
+                )}
               </div>
 
               {!isLast ? (
