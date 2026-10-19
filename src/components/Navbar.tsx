@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   GraduationCap, Bell, Sparkles, LogOut, Search, ChevronDown,
   ShieldCheck, Flame, Clock, BookOpen, Users, MessageSquare,
-  Trophy, Home, Menu, X, User, ChevronRight, Bot, Brain, FileCheck2
+  Trophy, Home, Menu, X, User, ChevronRight, Bot, Brain, FileCheck2, Cpu
 } from 'lucide-react';
 import type { UserProfile, UserRole, AppPage } from '../types';
 import { PRESET_USERS, AVAILABLE_COURSES, COMMUNITY_POSTS, RANK_LEADERBOARD } from '../mockData';
 
 import { isDemoUser } from '../utils/neuroSessionStore';
+import { eegService } from '../services/eegService';
 
 interface NavbarProps {
   currentUser: UserProfile;
@@ -19,6 +20,7 @@ interface NavbarProps {
   onNavigate: (page: AppPage) => void;
   unreadMessages: number;
   onOpenTimer: () => void;
+  onOpenHardwareManager?: () => void;
 }
 
 type SearchResult = {
@@ -41,13 +43,19 @@ const NAV_ITEMS: { label: string; page: AppPage; icon: React.ReactNode; }[] = [
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser, onLogout, onSwitchUser, onOpenNotifications,
   unreadCount, currentPage, onNavigate, unreadMessages, onOpenTimer,
+  onOpenHardwareManager,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showSearch, setShowSearch] = useState(false);
+  const [eegState, setEegState] = useState(eegService.getStatus().state);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    return eegService.onStatusChange((s) => setEegState(s.state));
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -219,6 +227,25 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* BioAmp Hardware Pill */}
+          <button
+            onClick={onOpenHardwareManager}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all ${
+              eegState === 'streaming'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                : eegState === 'connected'
+                ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
+                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+            }`}
+            title="BioAmp EXG Pill Hardware Settings"
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">
+              {eegState === 'streaming' ? 'BioAmp: Live' : eegState === 'connected' ? 'BioAmp: Ready' : 'BioAmp HW'}
+            </span>
+            {eegState === 'streaming' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+          </button>
+
           {/* Timer Pill */}
           {currentUser.role === 'Student' && currentUser.streakDays && (
             <button

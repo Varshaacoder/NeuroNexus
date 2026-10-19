@@ -23,6 +23,7 @@ import { CommunityPage } from './components/CommunityPage';
 import { MessagingPage } from './components/MessagingPage';
 import { TestsPage } from './components/TestsPage';
 import { NeuroAnalysisPage } from './components/NeuroAnalysisPage';
+import { BioAmpHardwareModal } from './components/BioAmpHardwareModal';
 import { SMART_REMINDERS, INITIAL_MESSAGES } from './mockData';
 import { isDemoUser, resetDemoData } from './utils/neuroSessionStore';
 import type { UserProfile, AppPage } from './types';
@@ -43,6 +44,7 @@ export default function App() {
     course: 'CS201 C Programming & Systems',
   });
   const [selectedNeuroSessionId, setSelectedNeuroSessionId] = useState<string | null>(null);
+  const [showHardwareModal, setShowHardwareModal] = useState(false);
 
   // Persist user session
   useEffect(() => {
@@ -142,6 +144,7 @@ export default function App() {
             initialSessionId={selectedNeuroSessionId}
             onNavigateToTests={() => setCurrentPage('tests')}
             onStartStudySession={() => setOpenModal('pomodoro')}
+            onOpenHardwareManager={() => setShowHardwareModal(true)}
           />
         );
       case 'leaderboard':
@@ -215,6 +218,7 @@ export default function App() {
         onNavigate={handleNavigate}
         unreadMessages={unreadMessages}
         onOpenTimer={() => setOpenModal('pomodoro')}
+        onOpenHardwareManager={() => setShowHardwareModal(true)}
       />
 
       {/* Persistent Demo Mode Banner */}
@@ -306,6 +310,12 @@ export default function App() {
           user={currentUser}
           onOpenMockTest={() => { setSelectedCourse(null); setOpenModal('mockTest'); }}
           onOpenAIClassroom={() => { setSelectedCourse(null); setOpenModal('aiClassroom'); }}
+        />
+      )}
+      {showHardwareModal && (
+        <BioAmpHardwareModal
+          isOpen={showHardwareModal}
+          onClose={() => setShowHardwareModal(false)}
         />
       )}
     </div>

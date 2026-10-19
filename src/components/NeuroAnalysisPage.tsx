@@ -17,6 +17,7 @@ interface NeuroAnalysisPageProps {
   initialSessionId?: string | null;
   onNavigateToTests: () => void;
   onStartStudySession: () => void;
+  onOpenHardwareManager?: () => void;
 }
 
 export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
@@ -24,6 +25,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
   initialSessionId,
   onNavigateToTests,
   onStartStudySession,
+  onOpenHardwareManager,
 }) => {
   const sessions = useMemo(() => getStudentSessions(user.id), [user.id]);
   const weeklyReport = useMemo(() => getWeeklyNeuralProgress(user.id), [user.id]);
@@ -101,9 +103,19 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
             <span className="font-bold text-white">BioAmp EXG Pill (Frontal Montage: FP1, FP2, A1 Ref)</span>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold text-[11px]">
-            <Info className="w-3.5 h-3.5" />
-            <span>Demo Mode Active: Synthetic Waveforms Clearly Labeled (Not Live EEG)</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onOpenHardwareManager}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 font-bold text-xs transition-colors shadow-2xs"
+            >
+              <Cpu className="w-3.5 h-3.5" />
+              <span>BioAmp Hardware Manager</span>
+            </button>
+
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold text-[11px]">
+              <Info className="w-3.5 h-3.5" />
+              <span>Demo Mode Active: Synthetic Waveforms Clearly Labeled (Not Live EEG)</span>
+            </div>
           </div>
         </div>
       </div>
