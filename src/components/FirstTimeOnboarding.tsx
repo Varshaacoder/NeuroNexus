@@ -182,7 +182,7 @@ export const FirstTimeOnboarding: React.FC<FirstTimeOnboardingProps> = ({ user, 
                   <span className="text-xs font-semibold text-slate-500">Step {currentStep} of 3</span>
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
-                  Welcome to <span className="bg-gradient-to-r from-indigo-600 to-amber-600 bg-clip-text text-transparent">CAMPUS-Q&A</span>
+                  Welcome to <span className="bg-gradient-to-r from-indigo-600 to-amber-600 bg-clip-text text-transparent">NeuroNexus</span>
                 </h1>
                 <p className="text-sm text-slate-600 mt-0.5">
                   Let's configure your academic command center and establish your personalized learning baseline.

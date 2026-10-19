@@ -21,6 +21,8 @@ import { CourseDetailModal } from './components/CourseDetailModal';
 import { LeaderboardPage } from './components/LeaderboardPage';
 import { CommunityPage } from './components/CommunityPage';
 import { MessagingPage } from './components/MessagingPage';
+import { TestsPage } from './components/TestsPage';
+import { NeuroAnalysisPage } from './components/NeuroAnalysisPage';
 import { SMART_REMINDERS, INITIAL_MESSAGES } from './mockData';
 import type { UserProfile, AppPage } from './types';
 
@@ -35,6 +37,11 @@ export default function App() {
   const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadMessages] = useState(INITIAL_MESSAGES.filter(m => m.unread).length);
+  const [activeTestConfig, setActiveTestConfig] = useState<{ title: string; course: string; topic?: string }>({
+    title: 'Personalized Mock Test',
+    course: 'CS201 C Programming & Systems',
+  });
+  const [selectedNeuroSessionId, setSelectedNeuroSessionId] = useState<string | null>(null);
 
   // Persist user session
   useEffect(() => {
@@ -113,6 +120,29 @@ export default function App() {
     switch (currentPage) {
       case 'courses':
         return <CoursesPage user={currentUser} onSelectCourse={(c) => setSelectedCourse(c)} />;
+      case 'tests':
+        return (
+          <TestsPage
+            user={currentUser}
+            onStartTest={(cfg) => {
+              setActiveTestConfig(cfg);
+              setOpenModal('mockTest');
+            }}
+            onNavigateToNeuroAnalysis={(sessId) => {
+              if (sessId) setSelectedNeuroSessionId(sessId);
+              setCurrentPage('neuro-analysis');
+            }}
+          />
+        );
+      case 'neuro-analysis':
+        return (
+          <NeuroAnalysisPage
+            user={currentUser}
+            initialSessionId={selectedNeuroSessionId}
+            onNavigateToTests={() => setCurrentPage('tests')}
+            onStartStudySession={() => setOpenModal('pomodoro')}
+          />
+        );
       case 'leaderboard':
         return <LeaderboardPage user={currentUser} />;
       case 'community':
@@ -208,7 +238,17 @@ export default function App() {
 
       {/* ── MODALS ────────────────────────────────────────────────────────── */}
       {openModal === 'mockTest' && (
-        <MockTestModal isOpen onClose={closeModal} user={currentUser} />
+        <MockTestModal
+          isOpen
+          onClose={closeModal}
+          user={currentUser}
+          testTitle={activeTestConfig.title}
+          testCourse={activeTestConfig.course}
+          onNavigateToNeuroAnalysis={(sessId) => {
+            setSelectedNeuroSessionId(sessId);
+            setCurrentPage('neuro-analysis');
+          }}
+        />
       )}
       {openModal === 'aiClassroom' && (
         <AIClassroomModal isOpen onClose={closeModal} user={currentUser} />

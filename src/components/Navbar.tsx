@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   GraduationCap, Bell, Sparkles, LogOut, Search, ChevronDown,
   ShieldCheck, Flame, Clock, BookOpen, Users, MessageSquare,
-  Trophy, Home, Menu, X, User, ChevronRight, Bot
+  Trophy, Home, Menu, X, User, ChevronRight, Bot, Brain, FileCheck2
 } from 'lucide-react';
 import type { UserProfile, UserRole, AppPage } from '../types';
 import { PRESET_USERS, AVAILABLE_COURSES, COMMUNITY_POSTS, RANK_LEADERBOARD } from '../mockData';
@@ -29,6 +29,8 @@ type SearchResult = {
 const NAV_ITEMS: { label: string; page: AppPage; icon: React.ReactNode; }[] = [
   { label: 'Dashboard', page: 'dashboard', icon: <Home className="w-4 h-4" /> },
   { label: 'Courses', page: 'courses', icon: <BookOpen className="w-4 h-4" /> },
+  { label: 'Tests', page: 'tests', icon: <FileCheck2 className="w-4 h-4" /> },
+  { label: 'Neuro Analysis', page: 'neuro-analysis', icon: <Brain className="w-4 h-4 text-indigo-600" /> },
   { label: 'Community', page: 'community', icon: <Users className="w-4 h-4" /> },
   { label: 'Leaderboard', page: 'leaderboard', icon: <Trophy className="w-4 h-4" /> },
   { label: 'Messages', page: 'messages', icon: <MessageSquare className="w-4 h-4" /> },
@@ -116,11 +118,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Logo */}
         <div className="flex items-center gap-3 shrink-0">
           <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-md shadow-indigo-200">
-            <GraduationCap className="w-5 h-5 text-white" />
+            <Brain className="w-5 h-5 text-white" />
           </div>
           <div>
-            <span className="font-black text-lg text-slate-900">
-              CAMPUS<span className="text-indigo-600">-Q&A</span>
+            <span className="font-black text-lg text-slate-900 tracking-tight">
+              Neuro<span className="text-indigo-600">Nexus</span>
             </span>
           </div>
         </div>
@@ -270,7 +272,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onLogout}
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all"
-              title="Sign Out of Campus-Q&A"
+              title="Sign Out of NeuroNexus"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>

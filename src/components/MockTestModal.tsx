@@ -1,27 +1,44 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { UserProfile } from '../types';
+import type { UserProfile, LearningSession, FocusTimePoint } from '../types';
 import { MOCK_TEST_QUESTIONS } from '../mockData';
-import { X, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, RotateCcw } from 'lucide-react';
+import { X, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, RotateCcw, Brain, Sparkles, AlertCircle } from 'lucide-react';
+import { saveStudentSession } from '../utils/neuroSessionStore';
 
 interface MockTestModalProps {
   isOpen: boolean;
   onClose: () => void;
   user: UserProfile;
+  testTitle?: string;
+  testCourse?: string;
+  onNavigateToNeuroAnalysis?: (sessionId: string) => void;
 }
 
-export const MockTestModal: React.FC<MockTestModalProps> = ({ isOpen, onClose, user: _ }) => {
+export const MockTestModal: React.FC<MockTestModalProps> = ({
+  isOpen,
+  onClose,
+  user,
+  testTitle = 'Personalized Mock Test',
+  testCourse = 'CS201 C Programming & Systems',
+  onNavigateToNeuroAnalysis,
+}) => {
   const [currentIdx, setCurrentIdx] = useState(0);
   // answers: { [questionId]: selectedOptionIndex }
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15 * 60);
+  const [enableEeg, setEnableEeg] = useState(true);
+  const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (isOpen && !isSubmitted) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
-          if (prev <= 1) { clearInterval(timerRef.current!); setIsSubmitted(true); return 0; }
+          if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            handleSubmitTest();
+            return 0;
+          }
           return prev - 1;
         });
       }, 1000);
@@ -40,9 +57,85 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({ isOpen, onClose, u
     setAnswers({ ...answers, [q.id]: optionIdx });
   };
 
-  const handleSubmit = () => {
+  const handleSubmitTest = () => {
     setIsSubmitted(true);
     if (timerRef.current) clearInterval(timerRef.current);
+
+    const testScore = MOCK_TEST_QUESTIONS.reduce(
+      (acc, question) => acc + (answers[question.id] === question.correctAnswer ? 1 : 0),
+      0
+    );
+    const pctScore = Math.round((testScore / MOCK_TEST_QUESTIONS.length) * 100);
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const sessionId = `test_${Date.now()}`;
+
+    // Topic level performance
+    const topicPerf = MOCK_TEST_QUESTIONS.map(qItem => ({
+      topic: qItem.topic,
+      score: answers[qItem.id] === qItem.correctAnswer ? 1 : 0,
+      total: 1,
+      correct: answers[qItem.id] === qItem.correctAnswer,
+    }));
+
+    // If EEG was enabled, create realistic focus dynamics based on test duration
+    const focusDyn: FocusTimePoint[] = enableEeg ? [
+      { timestamp: '00:00', minute: 1, attentionScore: 78, signalQuality: 98, phase: 'Test Start' },
+      { timestamp: '03:00', minute: 3, attentionScore: 86, signalQuality: 97, phase: 'Question 1' },
+      { timestamp: '06:00', minute: 6, attentionScore: 92, signalQuality: 95, phase: 'Question 2 (Peak)' },
+      { timestamp: '09:00', minute: 9, attentionScore: 84, signalQuality: 96, phase: 'Question 3' },
+      { timestamp: '12:00', minute: 12, attentionScore: 76, signalQuality: 91, phase: 'Question 4' },
+      { timestamp: '15:00', minute: 15, attentionScore: 80, signalQuality: 97, phase: 'Review & Submit' },
+    ] : [];
+
+    const newSession: LearningSession = {
+      id: sessionId,
+      userId: user.id,
+      title: testTitle,
+      type: 'quiz',
+      course: testCourse,
+      topic: MOCK_TEST_QUESTIONS[0]?.topic || 'Curriculum Diagnostic',
+      startTime: `Today, ${timeStr}`,
+      durationMinutes: 15,
+      score: pctScore,
+      totalQuestions: MOCK_TEST_QUESTIONS.length,
+      correctAnswers: testScore,
+      hasEegData: enableEeg,
+      isSimulated: enableEeg,
+      topicPerformance: topicPerf,
+      focusDynamics: enableEeg ? focusDyn : undefined,
+      neuralMetrics: enableEeg ? {
+        avgFocus: 83,
+        peakFocus: 92,
+        fatigueOnsetMinute: 12,
+        thetaBetaRatio: 1.35,
+        alphaAsymmetry: 0.20,
+        sampleEntropy: 1.89,
+        coherence: 0.66,
+        validCoveragePercent: 95,
+        signalQualityStatus: 'Excellent',
+        artifactsDetectedCount: 1,
+        channels: {
+          fp1: { label: 'FP1 (Left Frontal)', status: 'Active', impedanceKohm: 4.0 },
+          fp2: { label: 'FP2 (Right Frontal)', status: 'Active', impedanceKohm: 4.2 },
+          a1: { label: 'A1 (Mastoid Ref)', status: 'Active', impedanceKohm: 3.8 },
+        },
+        isSimulated: true,
+      } : undefined,
+      aiRecommendations: enableEeg ? [
+        {
+          id: `rec_test_${sessionId}`,
+          recommendation: 'Review pointer dereference syntax and memory offsets before the mid-term.',
+          evidence: `Attention averaged 83% throughout the test; error on question 2 coincided with an elevated cognitive workload reading.`,
+          actionType: 'revision',
+          actionTopic: 'Pointer Arithmetic',
+        }
+      ] : undefined,
+    };
+
+    saveStudentSession(user.id, newSession);
+    setCreatedSessionId(sessionId);
   };
 
   const resetTest = () => {
@@ -50,6 +143,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({ isOpen, onClose, u
     setIsSubmitted(false);
     setCurrentIdx(0);
     setTimeLeft(15 * 60);
+    setCreatedSessionId(null);
   };
 
   const formatTime = (seconds: number) => {
@@ -71,10 +165,16 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({ isOpen, onClose, u
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-black text-slate-800">Personalized Mock Test</h2>
+            <h2 className="text-lg font-black text-slate-800">{testTitle}</h2>
             <span className="px-2.5 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full border border-indigo-200">
-              Pointer Arithmetic + Probability
+              {testCourse}
             </span>
+            {enableEeg && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 bg-purple-50 text-purple-700 text-xs font-bold rounded-full border border-purple-200">
+                <Brain className="w-3 h-3" />
+                NeuroFocus Monitored
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-4">
             {!isSubmitted && (
@@ -218,6 +318,78 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({ isOpen, onClose, u
                 </div>
               </div>
 
+              {/* NeuroFocus Attempt Summary */}
+              {enableEeg ? (
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200 p-5 space-y-3.5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-indigo-600" />
+                      <h3 className="font-bold text-sm text-slate-900">NeuroFocus Telemetry Attached</h3>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                      Demo Data — Not Live EEG
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="p-3 bg-white/90 rounded-xl border border-indigo-100">
+                      <div className="text-xs text-slate-500 font-medium">Average Focus</div>
+                      <div className="text-xl font-black text-indigo-950 mt-0.5">83%</div>
+                    </div>
+                    <div className="p-3 bg-white/90 rounded-xl border border-indigo-100">
+                      <div className="text-xs text-slate-500 font-medium">Valid Coverage</div>
+                      <div className="text-xl font-black text-purple-950 mt-0.5">95%</div>
+                    </div>
+                    <div className="p-3 bg-white/90 rounded-xl border border-indigo-100">
+                      <div className="text-xs text-slate-500 font-medium">Channel Status</div>
+                      <div className="text-xl font-black text-emerald-700 mt-0.5">Stable</div>
+                    </div>
+                  </div>
+
+                  {onNavigateToNeuroAnalysis && createdSessionId && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onNavigateToNeuroAnalysis(createdSessionId);
+                      }}
+                      className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors shadow-xs"
+                    >
+                      <Brain className="w-4 h-4" />
+                      <span>View Full Neuro Analysis Report for this Attempt</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-100 rounded-2xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>No EEG data was recorded during this attempt. Academic scores were saved, but no neural report was generated.</span>
+                </div>
+              )}
+
+              {/* Topic-Wise Strengths and Weaknesses */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+                <h3 className="text-sm font-bold text-slate-800">Topic-Wise Diagnostic Breakdown</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {MOCK_TEST_QUESTIONS.map((question) => {
+                    const isPassed = answers[question.id] === question.correctAnswer;
+                    return (
+                      <div
+                        key={question.id}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between ${
+                          isPassed
+                            ? 'bg-emerald-50/60 text-emerald-800 border-emerald-200'
+                            : 'bg-rose-50/60 text-rose-800 border-rose-200'
+                        }`}
+                      >
+                        <span className="font-semibold">{question.topic}</span>
+                        <span className="font-bold">{isPassed ? '✓ Passed' : '✗ Needs Practice'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Per-question breakdown */}
               <h3 className="text-base font-black text-slate-800">Question Review</h3>
               {MOCK_TEST_QUESTIONS.map((question, idx) => {
@@ -261,14 +433,27 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({ isOpen, onClose, u
         <div className="px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between shrink-0">
           {!isSubmitted ? (
             <>
-              <button
-                onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
-                disabled={isFirst}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Previous
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
+                  disabled={isFirst}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Previous
+                </button>
+
+                <label className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-600 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={enableEeg}
+                    onChange={(e) => setEnableEeg(e.target.checked)}
+                    className="rounded text-indigo-600 focus:ring-indigo-400"
+                  />
+                  <span>Track NeuroFocus (Demo)</span>
+                </label>
+              </div>
+
               {!isLast ? (
                 <button
                   onClick={() => setCurrentIdx(i => Math.min(MOCK_TEST_QUESTIONS.length - 1, i + 1))}
@@ -279,7 +464,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({ isOpen, onClose, u
                 </button>
               ) : (
                 <button
-                  onClick={handleSubmit}
+                  onClick={handleSubmitTest}
                   className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors shadow-sm text-sm"
                 >
                   Submit Test

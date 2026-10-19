@@ -262,7 +262,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                 Suggested Next Action:
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                 {/* Action 1: 10-minute revision (Emerald) */}
                 <button
                   onClick={() => onOpenRevision(recommendedTopic.name)}
@@ -290,16 +290,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                   <span>Mini assessment</span>
                 </button>
 
-                {/* Action 4: Personalized Mock Test (Violet gradient) */}
-                <button
-                  onClick={onOpenMockTest}
-                  className="py-3 px-3.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-xs shadow-purple-200 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
-                >
-                  <Sparkles className="w-4 h-4 shrink-0" />
-                  <span>Generate Mock Test</span>
-                </button>
-
-                {/* Action 5: Start AI Classroom Session (Cyan/Violet) */}
+                {/* Action 4: Start AI Classroom Session (Cyan/Violet) */}
                 <button
                   onClick={onOpenAIClassroom}
                   className="py-3 px-3.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-700 hover:to-cyan-700 shadow-xs shadow-cyan-200 flex items-center justify-center gap-2 transition-all active:scale-[0.99]"

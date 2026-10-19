@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   GraduationCap, ShieldCheck, KeyRound, Mail, Lock,
-  Smartphone, Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2, Sparkles, Building2, UserPlus, User
+  Smartphone, Eye, EyeOff, AlertCircle, ArrowRight, CheckCircle2, Sparkles, Building2, UserPlus, User, Brain
 } from 'lucide-react';
 import type { UserRole, UserProfile } from '../types';
 import { PRESET_USERS } from '../mockData';
@@ -230,13 +230,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
           {/* Card Header */}
           <div className="bg-gradient-to-br from-indigo-700 to-slate-900 rounded-t-3xl p-7 text-white text-center">
             <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-4">
-              <GraduationCap className="w-8 h-8 text-amber-300" />
+              <Brain className="w-8 h-8 text-amber-300" />
             </div>
-            <h1 className="text-2xl font-black text-white">
-              CAMPUS<span className="text-amber-400">-Q&A</span>
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              Neuro<span className="text-amber-400">Nexus</span>
             </h1>
             <p className="text-sm text-indigo-200 mt-1.5">
-              Apex Institute of Science & Technology
+              AI Academic Collaboration & NeuroFocus Platform
             </p>
 
             {/* Mode Switcher Tabs */}
@@ -552,7 +552,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
               <h3 className="font-bold text-sm text-slate-800">Choose Google Account</h3>
               <button onClick={() => setSsoModal(null)} className="ml-auto text-slate-400 hover:text-slate-600 text-lg leading-none">×</button>
             </div>
-            <p className="text-xs text-slate-500 mb-3">Sign in to <strong>CAMPUS-Q&A</strong> with:</p>
+            <p className="text-xs text-slate-500 mb-3">Sign in to <strong>NeuroNexus</strong> with:</p>
             <div className="space-y-2">
               {[
                 { key: 'demo_student', label: 'Demo Student', email: 'demo.student@apex.edu' },
