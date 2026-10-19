@@ -246,45 +246,71 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-indigo-600" />
-                      <span>Focus Dynamics — Continuous Cognitive Workload Curve</span>
+                      <span>Focus Dynamics — Session Attention Timeline</span>
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Windowed Beta/(Theta + Alpha) spectral ratio with ocular blink artifact suppression. Timestamps reflect actual session progression.
+                      Estimated attention index over elapsed session time. The estimate is inferred from
+                      EEG spectral features (Beta/(Theta+Alpha) ratio) — it does not directly measure
+                      concentration, understanding, or intelligence.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs font-semibold">
+                  <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
                     <span className="flex items-center gap-1.5 text-indigo-600">
                       <span className="w-3 h-1 bg-indigo-600 rounded-full" />
-                      Attention Index
+                      Estimated Attention
                     </span>
                     <span className="flex items-center gap-1.5 text-slate-400">
-                      <span className="w-3 h-1 bg-slate-300 rounded-full" />
+                      <span className="w-3 h-1 bg-slate-300 rounded-full border-t border-dashed border-slate-400" />
                       Signal Quality (SQI)
                     </span>
+                    <span className="flex items-center gap-1.5 text-rose-500">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400/70 border border-rose-500" />
+                      Artifact / Low-Confidence
+                    </span>
                   </div>
+                </div>
+
+                {/* Data-source provenance label */}
+                <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold border ${
+                    selectedSession.isSimulated
+                      ? 'bg-amber-50 text-amber-800 border-amber-300'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${selectedSession.isSimulated ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                    {selectedSession.isSimulated ? 'Simulated Demo Data — Not Live EEG' : 'Recorded Hardware Session'}
+                  </span>
+                  <span className="text-slate-400">
+                    {selectedSession.focusDynamics.length} sampled intervals • {selectedSession.durationMinutes} min total
+                  </span>
                 </div>
 
                 <div className="h-64 sm:h-72 w-full bg-slate-50/60 rounded-2xl border border-slate-200/90 p-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={selectedSession.focusDynamics}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      margin={{ top: 10, right: 20, left: -10, bottom: 5 }}
                     >
                       <defs>
                         <linearGradient id="focusGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.35} />
+                          <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.32} />
                           <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis
-                        dataKey="timestamp"
+                        dataKey="minute"
+                        type="number"
+                        domain={[1, selectedSession.durationMinutes]}
+                        tickFormatter={(m: number) => `${m}m`}
                         tick={{ fontSize: 11, fill: '#64748b' }}
+                        label={{ value: 'Elapsed Time (min)', position: 'insideBottom', offset: -2, fill: '#94a3b8', fontSize: 11 }}
                       />
                       <YAxis
                         domain={[40, 100]}
                         tick={{ fontSize: 11, fill: '#64748b' }}
+                        label={{ value: 'Index (0–100)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 11 }}
                       />
                       <Tooltip
                         contentStyle={{
@@ -294,11 +320,24 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                           fontSize: '12px',
                           boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                         }}
-                        formatter={(val: any, name: any) => [
-                          `${val}%`,
-                          name === 'attentionScore' ? 'Estimated Focus' : 'Signal Quality',
-                        ]}
-                        labelFormatter={(label) => `Time: ${label}`}
+                        formatter={(val: any, name: any, props: any) => {
+                          const point = props?.payload as FocusTimePoint | undefined;
+                          if (name === 'attentionScore') {
+                            const conf = point && point.signalQuality < 90 ? 'Low confidence' : 'Adequate confidence';
+                            const art = point?.isArtifact ? ' • Artifact flagged' : '';
+                            return [`${val}% (estimate)`, `Estimated Attention — ${conf}${art}`];
+                          }
+                          if (name === 'signalQuality') {
+                            return [`${val}%`, 'Signal Quality (SQI)'];
+                          }
+                          return [`${val}`, name];
+                        }}
+                        labelFormatter={(label: any) => {
+                          const point = selectedSession.focusDynamics?.find(p => p.minute === label);
+                          const ts = point?.timestamp ? ` • Clock: ${point.timestamp}` : '';
+                          const phase = point?.phase ? ` • Phase: ${point.phase}` : '';
+                          return `Elapsed: ${label} min${ts}${phase}`;
+                        }}
                       />
                       <Area
                         type="monotone"
@@ -306,7 +345,18 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                         stroke="#4f46e5"
                         strokeWidth={2.5}
                         fill="url(#focusGradient)"
-                        dot={{ fill: '#4f46e5', strokeWidth: 0, r: 3 }}
+                        dot={(props: any) => {
+                          const { cx, cy, payload, index } = props;
+                          const isArtifact = (payload as FocusTimePoint)?.isArtifact;
+                          const lowConf = (payload as FocusTimePoint)?.signalQuality < 90;
+                          if (isArtifact) {
+                            return <circle key={`a-${index}`} cx={cx} cy={cy} r={4} fill="#fb7185" stroke="#e11d48" strokeWidth={1.5} />;
+                          }
+                          if (lowConf) {
+                            return <circle key={`l-${index}`} cx={cx} cy={cy} r={3.5} fill="#fbbf24" stroke="#f59e0b" strokeWidth={1} />;
+                          }
+                          return <circle key={`n-${index}`} cx={cx} cy={cy} r={3} fill="#4f46e5" strokeWidth={0} />;
+                        }}
                         activeDot={{ r: 6 }}
                       />
                       <Line
@@ -319,6 +369,22 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                </div>
+
+                {/* Confidence / data-quality legend explanation */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                  <div className="p-2.5 rounded-xl bg-rose-50/60 border border-rose-100">
+                    <span className="font-bold text-rose-700">Rose dots:</span>
+                    <span className="text-rose-600/80 block mt-0.5">Artifact-flagged intervals — excluded from aggregate focus calculations.</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-amber-50/60 border border-amber-100">
+                    <span className="font-bold text-amber-700">Amber dots:</span>
+                    <span className="text-amber-700/80 block mt-0.5">Signal quality below 90% — attention estimate treated as low confidence.</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="font-bold text-slate-700">Indigo dots:</span>
+                    <span className="text-slate-500 block mt-0.5">Adequate signal — attention estimate considered usable.</span>
+                  </div>
                 </div>
 
                 {/* Focus Phase Annotations */}

@@ -4,6 +4,27 @@ import { MOCK_TEST_QUESTIONS } from '../mockData';
 import { X, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, RotateCcw, Brain, Sparkles, AlertCircle } from 'lucide-react';
 import { saveStudentSession } from '../utils/neuroSessionStore';
 
+// Demo focus-dynamics curve for mock-test EEG telemetry.
+// Clearly labeled in the UI as "Demo Data — Not Live EEG".
+// avgFocus / peakFocus / validCoverage are DERIVED from this array,
+// never hardcoded as standalone constants.
+const DEMO_FOCUS_DYNAMICS: FocusTimePoint[] = [
+  { timestamp: '00:00', minute: 1, attentionScore: 78, signalQuality: 98, phase: 'Test Start' },
+  { timestamp: '03:00', minute: 3, attentionScore: 86, signalQuality: 97, phase: 'Question 1' },
+  { timestamp: '06:00', minute: 6, attentionScore: 92, signalQuality: 95, phase: 'Question 2 (Peak)' },
+  { timestamp: '09:00', minute: 9, attentionScore: 84, signalQuality: 96, phase: 'Question 3' },
+  { timestamp: '12:00', minute: 12, attentionScore: 76, signalQuality: 91, phase: 'Question 4' },
+  { timestamp: '15:00', minute: 15, attentionScore: 80, signalQuality: 97, phase: 'Review & Submit' },
+];
+
+const demoAvgFocus = Math.round(
+  DEMO_FOCUS_DYNAMICS.reduce((acc, d) => acc + d.attentionScore, 0) / DEMO_FOCUS_DYNAMICS.length
+);
+const demoPeakFocus = Math.max(...DEMO_FOCUS_DYNAMICS.map(d => d.attentionScore));
+const demoValidCoverage = Math.round(
+  DEMO_FOCUS_DYNAMICS.reduce((acc, d) => acc + d.signalQuality, 0) / DEMO_FOCUS_DYNAMICS.length
+);
+
 interface MockTestModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -79,15 +100,10 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       correct: answers[qItem.id] === qItem.correctAnswer,
     }));
 
-    // If EEG was enabled, create realistic focus dynamics based on test duration
-    const focusDyn: FocusTimePoint[] = enableEeg ? [
-      { timestamp: '00:00', minute: 1, attentionScore: 78, signalQuality: 98, phase: 'Test Start' },
-      { timestamp: '03:00', minute: 3, attentionScore: 86, signalQuality: 97, phase: 'Question 1' },
-      { timestamp: '06:00', minute: 6, attentionScore: 92, signalQuality: 95, phase: 'Question 2 (Peak)' },
-      { timestamp: '09:00', minute: 9, attentionScore: 84, signalQuality: 96, phase: 'Question 3' },
-      { timestamp: '12:00', minute: 12, attentionScore: 76, signalQuality: 91, phase: 'Question 4' },
-      { timestamp: '15:00', minute: 15, attentionScore: 80, signalQuality: 97, phase: 'Review & Submit' },
-    ] : [];
+    // If EEG was enabled, use the shared demo focus-dynamics curve.
+    // avgFocus / peakFocus / validCoverage are derived from DEMO_FOCUS_DYNAMICS,
+    // not hardcoded constants — see the module-level definitions above.
+    const focusDyn: FocusTimePoint[] = enableEeg ? DEMO_FOCUS_DYNAMICS : [];
 
     const newSession: LearningSession = {
       id: sessionId,
@@ -106,14 +122,14 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       topicPerformance: topicPerf,
       focusDynamics: enableEeg ? focusDyn : undefined,
       neuralMetrics: enableEeg ? {
-        avgFocus: 83,
-        peakFocus: 92,
+        avgFocus: demoAvgFocus,
+        peakFocus: demoPeakFocus,
         fatigueOnsetMinute: 12,
         thetaBetaRatio: 1.35,
         alphaAsymmetry: 0.20,
         sampleEntropy: 1.89,
         coherence: 0.66,
-        validCoveragePercent: 95,
+        validCoveragePercent: demoValidCoverage,
         signalQualityStatus: 'Excellent',
         artifactsDetectedCount: 1,
         channels: {
@@ -127,7 +143,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
         {
           id: `rec_test_${sessionId}`,
           recommendation: 'Review pointer dereference syntax and memory offsets before the mid-term.',
-          evidence: `Attention averaged 83% throughout the test; error on question 2 coincided with an elevated cognitive workload reading.`,
+          evidence: `Estimated attention averaged ${demoAvgFocus}% across ${DEMO_FOCUS_DYNAMICS.length} sampled intervals; error on question 2 coincided with an elevated cognitive workload reading.`,
           actionType: 'revision',
           actionTopic: 'Pointer Arithmetic',
         }
@@ -331,18 +347,33 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                     </span>
                   </div>
 
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Attention values are <strong>estimates derived from the demo focus-dynamics curve</strong>, not direct measurements of concentration or understanding. EEG can indicate cognitive workload and vigilance drift only.
+                  </p>
+
                   <div className="grid grid-cols-3 gap-3 text-center">
-                    <div className="p-3 bg-white/90 rounded-xl border border-indigo-100">
+                    <div
+                      className="p-3 bg-white/90 rounded-xl border border-indigo-100 relative group"
+                      title={`Estimated attention index, averaged across ${DEMO_FOCUS_DYNAMICS.length} sampled intervals of the demo curve. Not a live EEG measurement.`}
+                    >
                       <div className="text-xs text-slate-500 font-medium">Average Focus</div>
-                      <div className="text-xl font-black text-indigo-950 mt-0.5">83%</div>
+                      <div className="text-xl font-black text-indigo-950 mt-0.5">{demoAvgFocus}%</div>
+                      <div className="text-[9px] text-slate-400 mt-0.5">est. from demo curve</div>
                     </div>
-                    <div className="p-3 bg-white/90 rounded-xl border border-indigo-100">
+                    <div
+                      className="p-3 bg-white/90 rounded-xl border border-indigo-100"
+                      title="Peak estimated attention reached during the demo focus curve."
+                    >
+                      <div className="text-xs text-slate-500 font-medium">Peak Focus</div>
+                      <div className="text-xl font-black text-indigo-950 mt-0.5">{demoPeakFocus}%</div>
+                      <div className="text-[9px] text-slate-400 mt-0.5">single-interval max</div>
+                    </div>
+                    <div
+                      className="p-3 bg-white/90 rounded-xl border border-indigo-100"
+                      title="Mean signal-quality index across the demo focus curve."
+                    >
                       <div className="text-xs text-slate-500 font-medium">Valid Coverage</div>
-                      <div className="text-xl font-black text-purple-950 mt-0.5">95%</div>
-                    </div>
-                    <div className="p-3 bg-white/90 rounded-xl border border-indigo-100">
-                      <div className="text-xs text-slate-500 font-medium">Channel Status</div>
-                      <div className="text-xl font-black text-emerald-700 mt-0.5">Stable</div>
+                      <div className="text-xl font-black text-purple-950 mt-0.5">{demoValidCoverage}%</div>
                     </div>
                   </div>
 
