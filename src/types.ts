@@ -132,6 +132,48 @@ export interface PomodoroPhaseRecord {
   eegRecordingActive: boolean;
 }
 
+export interface QuestionIntervalEvent {
+  questionId: number;
+  questionIndex: number;
+  topic: string;
+  openedTimestampMs: number;
+  answeredTimestampMs?: number;
+  timeSpentSeconds: number;
+  userAnswerIndex?: number;
+  correctAnswerIndex: number;
+  isCorrect: boolean;
+  answerChangeCount: number;
+  skipped: boolean;
+  revisited: boolean;
+  avgAttentionScore?: number;
+  avgSignalQuality?: number;
+  isArtifactFlagged?: boolean;
+  confidenceRating?: 'Adequate' | 'Low' | 'Unreliable';
+}
+
+export interface FocusDropEvent {
+  id: string;
+  timestampMs: number;
+  elapsedMinute: number;
+  questionIndex?: number;
+  topic?: string;
+  estimatedAttention: number;
+  signalQuality: number;
+  confidence: 'High' | 'Low' | 'Unreliable';
+  associatedAcademicContext: string; // e.g. "Answered incorrectly after 2 revisions", "Normal response time"
+  explanation: string;
+}
+
+export interface FocusCoachSuggestion {
+  id: string;
+  title: string;
+  observedPattern: string;
+  supportingEvidence: string;
+  actionableStep: string;
+  evaluationMethod: string;
+  category: 'pacing' | 'break' | 'topic_revision' | 'environment' | 'recall';
+}
+
 export interface LearningSession {
   id: string;
   userId: string;
@@ -140,15 +182,21 @@ export interface LearningSession {
   course: string;
   topic?: string;
   startTime: string; // ISO string or human formatted date
+  startEpochMs?: number;
+  endEpochMs?: number;
   durationMinutes: number;
   focusMinutes?: number;
   breakMinutes?: number;
   pomodoroPhases?: PomodoroPhaseRecord[];
+  questionEvents?: QuestionIntervalEvent[];
+  focusDropEvents?: FocusDropEvent[];
+  coachSuggestions?: FocusCoachSuggestion[];
   eegInterrupted?: boolean;
   interruptionReason?: string;
   score?: number; // percentage if quiz/test
   totalQuestions?: number;
   correctAnswers?: number;
+  skippedQuestions?: number;
   hasEegData: boolean;
   isSimulated: boolean;
   neuralMetrics?: NeuralMetrics;

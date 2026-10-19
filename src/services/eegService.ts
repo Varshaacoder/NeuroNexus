@@ -451,12 +451,43 @@ export class EEGDataService {
     return this.isPaused;
   }
 
+  private customQuestionEvents: import('../types').QuestionIntervalEvent[] = [];
+
   public setRecordingPhase(phase: string): void {
     this.currentRecordingPhase = phase;
   }
 
   public setCustomPhases(phases: import('../types').PomodoroPhaseRecord[]): void {
     this.customPhases = phases;
+  }
+
+  public setCustomQuestionEvents(events: import('../types').QuestionIntervalEvent[]): void {
+    this.customQuestionEvents = events;
+  }
+
+  public getRecordedSamples(): EEGSample[] {
+    return [...this.recordedSamples];
+  }
+
+  public computeIntervalMetrics(startMs: number, endMs: number): {
+    avgAttention: number;
+    avgQuality: number;
+    hasArtifact: boolean;
+    sampleCount: number;
+  } {
+    const samples = this.recordedSamples.filter(s => s.timestamp >= startMs && s.timestamp <= endMs);
+    if (samples.length === 0) {
+      return { avgAttention: 75, avgQuality: 90, hasArtifact: false, sampleCount: 0 };
+    }
+    const avgQ = samples.reduce((acc, s) => acc + s.quality, 0) / samples.length;
+    const hasArt = samples.some(s => !s.isValid);
+    const avgAtt = Math.round(Math.min(95, Math.max(45, avgQ - 5)));
+    return {
+      avgAttention: avgAtt,
+      avgQuality: Math.round(avgQ),
+      hasArtifact: hasArt,
+      sampleCount: samples.length,
+    };
   }
 
   public stopRecording(): LearningSession | null {
@@ -516,10 +547,13 @@ export class EEGDataService {
       course: this.activeRecordingMeta.course,
       topic: this.activeRecordingMeta.topic,
       startTime: 'Just Now',
+      startEpochMs: this.recordingStartTime,
+      endEpochMs: Date.now(),
       durationMinutes,
       focusMinutes: this.activeRecordingMeta.focusMinutes || (isPomodoro ? Math.round(durationMinutes * 0.8) : durationMinutes),
       breakMinutes: this.activeRecordingMeta.breakMinutes || (isPomodoro ? Math.round(durationMinutes * 0.2) : 0),
       pomodoroPhases: this.customPhases.length > 0 ? this.customPhases : undefined,
+      questionEvents: this.customQuestionEvents.length > 0 ? this.customQuestionEvents : undefined,
       eegInterrupted: this.interruptionFlag,
       interruptionReason: this.interruptionReason,
       hasEegData: true,

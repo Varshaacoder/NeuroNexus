@@ -3,7 +3,7 @@ import {
   Brain, Activity, Sparkles, Clock, Calendar, ShieldCheck,
   AlertTriangle, CheckCircle2, Zap, BarChart2, Filter, ArrowUpRight,
   HelpCircle, Info, TrendingUp, RefreshCw, Play, Square, FileCheck2, BookOpen,
-  ChevronDown, Cpu, ShieldAlert, Award, Radio, CheckCircle, Wifi, WifiOff
+  ChevronDown, Cpu, ShieldAlert, Award, Radio, CheckCircle, Wifi, WifiOff, AlertCircle
 } from 'lucide-react';
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -57,6 +57,9 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
     const latestEligible = sessions.find(s => s.hasEegData) || sessions[0];
     return latestEligible ? latestEligible.id : '';
   });
+
+  // Selected question index within assessment (1-based, or null for all)
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
 
   // History filters
   const [filterType, setFilterType] = useState<'all' | 'study' | 'pomodoro' | 'quiz' | 'college_test'>('all');
@@ -617,6 +620,117 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                   </div>
                 )}
 
+                {/* ── QUESTION-INTERVAL SYNCHRONIZED TIMELINE (Assessments & Quizzes) ── */}
+                {selectedSession.questionEvents && selectedSession.questionEvents.length > 0 && (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <FileCheck2 className="w-4 h-4 text-indigo-600" />
+                        <span className="font-bold text-xs text-slate-900">Synchronized Question Timeline & Intervals</span>
+                        <span className="text-[11px] text-slate-500 font-normal">Click question to inspect biometric & pacing alignment</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] font-semibold">
+                        <span className="flex items-center gap-1 text-emerald-700">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" /> Correct
+                        </span>
+                        <span className="flex items-center gap-1 text-rose-700">
+                          <span className="w-2 h-2 rounded-full bg-rose-500" /> Incorrect
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-500">
+                          <span className="w-2 h-2 rounded-full bg-slate-300" /> Skipped
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Question Interval Chips */}
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {selectedSession.questionEvents.map((qEvt) => {
+                        const isSelected = selectedQuestionIndex === qEvt.questionIndex;
+                        return (
+                          <button
+                            key={qEvt.questionId}
+                            onClick={() => setSelectedQuestionIndex(isSelected ? null : qEvt.questionIndex)}
+                            className={`p-2.5 rounded-xl border text-left transition-all relative ${
+                              isSelected
+                                ? 'border-indigo-600 bg-indigo-50/80 shadow-xs ring-2 ring-indigo-500/20'
+                                : qEvt.isCorrect
+                                ? 'border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50'
+                                : qEvt.skipped
+                                ? 'border-slate-200 bg-white hover:bg-slate-50'
+                                : 'border-rose-200 bg-rose-50/50 hover:bg-rose-50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-xs text-slate-800">Q{qEvt.questionIndex}</span>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                                qEvt.isCorrect ? 'bg-emerald-100 text-emerald-800' : qEvt.skipped ? 'bg-slate-100 text-slate-600' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {qEvt.isCorrect ? '✓ Correct' : qEvt.skipped ? 'Skipped' : '✗ Missed'}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-600 truncate mt-1">{qEvt.topic}</div>
+                            <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1.5 pt-1 border-t border-slate-200/60">
+                              <span>⏱ {qEvt.timeSpentSeconds}s</span>
+                              <span>🧠 {qEvt.avgAttentionScore ? `${qEvt.avgAttentionScore}% focus` : 'N/A'}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Detailed Inspector for Selected Question */}
+                    {selectedQuestionIndex !== null && (() => {
+                      const qDetail = selectedSession.questionEvents?.find(q => q.questionIndex === selectedQuestionIndex);
+                      if (!qDetail) return null;
+                      return (
+                        <div className="p-3.5 rounded-xl bg-white border border-indigo-200 shadow-2xs space-y-2 text-xs">
+                          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                            <span className="font-black text-indigo-950 text-sm">
+                              Question {qDetail.questionIndex} In-Depth Biometric Correlation
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                              qDetail.isCorrect ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {qDetail.isCorrect ? 'Answered Correctly' : 'Missed Question'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-700">
+                            <div>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase block">Topic Assessed</span>
+                              <span className="font-bold">{qDetail.topic}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase block">Time Invested</span>
+                              <span className="font-bold">{qDetail.timeSpentSeconds} seconds</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase block">Answer Changes</span>
+                              <span className="font-bold">{qDetail.answerChangeCount} revision(s)</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase block">Confidence Level</span>
+                              <span className={`font-bold ${qDetail.confidenceRating === 'Adequate' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                {qDetail.confidenceRating || 'Adequate'} (SQI: {qDetail.avgSignalQuality || 95}%)
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-[11px] text-slate-500 pt-1 leading-relaxed">
+                            {qDetail.isCorrect && qDetail.avgAttentionScore && qDetail.avgAttentionScore >= 80
+                              ? `High attention (${qDetail.avgAttentionScore}%) coupled with a correct response demonstrates solid conceptual mastery and fluid recall.`
+                              : !qDetail.isCorrect && qDetail.avgAttentionScore && qDetail.avgAttentionScore >= 80
+                              ? `Attention remained high (${qDetail.avgAttentionScore}%), indicating intense analytical effort. The incorrect outcome suggests a knowledge or precedence gap rather than distraction.`
+                              : !qDetail.isCorrect && qDetail.avgAttentionScore && qDetail.avgAttentionScore < 80
+                              ? `Estimated attention dipped to ${qDetail.avgAttentionScore}%. Combined with prolonged deliberation, this indicates potential cognitive fatigue during this interval.`
+                              : `Session interval tracked across ${qDetail.timeSpentSeconds} seconds.`}
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
                 <div className="h-64 sm:h-72 w-full bg-slate-50/60 rounded-2xl border border-slate-200/90 p-4">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
@@ -840,6 +954,93 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
                       NeuroNexus analytics reflect relative changes in cognitive workload. They do not constitute clinical neurological diagnosis, medical diagnosis of ADHD, or clinical cognitive evaluation.
                     </p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── SECTION 3C: WHERE FOCUS MAY HAVE DECLINED (Evidence-Backed Drops) ── */}
+            {selectedSession.hasEegData && selectedSession.focusDropEvents && selectedSession.focusDropEvents.length > 0 && (
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <h4 className="font-bold text-sm text-slate-900">
+                    Estimated Attention Fluctuations & Intervals of Interest
+                  </h4>
+                  <span className="text-[11px] text-slate-400 font-normal">
+                    (Correlated with pacing, answer revisions, and signal quality)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {selectedSession.focusDropEvents.map((drop) => (
+                    <div key={drop.id} className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-amber-900">
+                          {drop.questionIndex ? `Question ${drop.questionIndex}` : `Minute ${drop.elapsedMinute}`} — {drop.topic || 'Assessment Interval'}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                          {drop.confidence} Confidence (SQI: {drop.signalQuality}%)
+                        </span>
+                      </div>
+
+                      <div className="text-slate-700">
+                        <strong>Academic Context:</strong> {drop.associatedAcademicContext}
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 leading-relaxed bg-white/80 p-2.5 rounded-xl border border-amber-100">
+                        <strong>Biometric Analysis:</strong> {drop.explanation}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── SECTION 6: PERSONALIZED FOCUS IMPROVEMENT COACH ─────────────── */}
+            {selectedSession.coachSuggestions && selectedSession.coachSuggestions.length > 0 && (
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                    <h4 className="font-bold text-sm text-slate-900">
+                      Personalized Focus Improvement Coach
+                    </h4>
+                  </div>
+                  <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                    Evidence-Backed Study Strategy
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {selectedSession.coachSuggestions.map((coach) => (
+                    <div key={coach.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-indigo-950 text-sm">{coach.title}</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">
+                          {coach.category}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-slate-700 text-[11px]">
+                        <div>
+                          <span className="font-bold text-slate-900">1. Observed Pattern: </span>
+                          <span>{coach.observedPattern}</span>
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-900">2. Supporting Evidence: </span>
+                          <span>{coach.supportingEvidence}</span>
+                        </div>
+                        <div className="p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-100 text-indigo-950 font-medium">
+                          <span className="font-bold text-indigo-700">3. Actionable Next Step: </span>
+                          {coach.actionableStep}
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-900">4. Evaluation Method: </span>
+                          <span>{coach.evaluationMethod}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

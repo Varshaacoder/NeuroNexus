@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import type { UserProfile, LearningSession, FocusTimePoint } from '../types';
+import type { UserProfile, LearningSession, FocusTimePoint, QuestionIntervalEvent, FocusDropEvent, FocusCoachSuggestion } from '../types';
 import { MOCK_TEST_QUESTIONS } from '../mockData';
-import { X, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, RotateCcw, Brain, Sparkles, AlertCircle, Cpu } from 'lucide-react';
+import { X, Clock, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, RotateCcw, Brain, Sparkles, AlertCircle, Cpu, HelpCircle, Activity } from 'lucide-react';
 import { saveStudentSession, isDemoUser, updateUserAcademicRecord } from '../utils/neuroSessionStore';
 import { eegService } from '../services/eegService';
 
@@ -13,6 +13,19 @@ interface MockTestModalProps {
   testCourse?: string;
   onNavigateToNeuroAnalysis?: (sessionId: string) => void;
   onUserUpdated?: (user: UserProfile) => void;
+}
+
+interface QuestionTimingRecord {
+  questionId: number;
+  questionIndex: number;
+  topic: string;
+  openedTimestampMs: number;
+  answeredTimestampMs?: number;
+  timeSpentSeconds: number;
+  answerChangeCount: number;
+  revisitCount: number;
+  userAnswerIndex?: number;
+  skipped: boolean;
 }
 
 export const MockTestModal: React.FC<MockTestModalProps> = ({
@@ -29,14 +42,54 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
   const isHardwareStreaming = hardwareStatus.state === 'streaming';
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  // answers: { [questionId]: selectedOptionIndex }
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [enableDemoEeg, setEnableDemoEeg] = useState(isDemo);
   const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
+
+  // Timestamp Synchronization State
+  const testStartEpochMsRef = useRef<number>(Date.now());
+  const questionTimingMapRef = useRef<Record<number, QuestionTimingRecord>>({});
+  const currentQEnterTimeRef = useRef<number>(Date.now());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Initialize tracking on modal open
+  useEffect(() => {
+    if (isOpen) {
+      testStartEpochMsRef.current = Date.now();
+      currentQEnterTimeRef.current = Date.now();
+
+      // Initialize question records
+      const initialMap: Record<number, QuestionTimingRecord> = {};
+      MOCK_TEST_QUESTIONS.forEach((quest, idx) => {
+        initialMap[quest.id] = {
+          questionId: quest.id,
+          questionIndex: idx + 1,
+          topic: quest.topic,
+          openedTimestampMs: idx === 0 ? Date.now() : 0,
+          timeSpentSeconds: 0,
+          answerChangeCount: 0,
+          revisitCount: 0,
+          skipped: true,
+        };
+      });
+      questionTimingMapRef.current = initialMap;
+
+      // If real EEG hardware is streaming, start recording session
+      if (isHardwareStreaming) {
+        eegService.startRecording({
+          userId: user.id,
+          course: testCourse,
+          topic: MOCK_TEST_QUESTIONS[0]?.topic || 'Curriculum Diagnostic',
+          type: 'quiz',
+          title: testTitle,
+        });
+      }
+    }
+  }, [isOpen]);
+
+  // Main countdown timer
   useEffect(() => {
     if (isOpen && !isSubmitted) {
       timerRef.current = setInterval(() => {
@@ -59,14 +112,65 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
   const isLast = currentIdx === MOCK_TEST_QUESTIONS.length - 1;
   const isFirst = currentIdx === 0;
 
+  // Record elapsed time on question transition
+  const recordQuestionTimeSpent = (questionId: number) => {
+    const now = Date.now();
+    const elapsedSec = Math.max(1, Math.round((now - currentQEnterTimeRef.current) / 1000));
+    const rec = questionTimingMapRef.current[questionId];
+    if (rec) {
+      rec.timeSpentSeconds += elapsedSec;
+    }
+    currentQEnterTimeRef.current = now;
+  };
+
   const handleSelect = (optionIdx: number) => {
     if (isSubmitted) return;
-    setAnswers({ ...answers, [q.id]: optionIdx });
+    const prevAnswer = answers[q.id];
+    const isChange = prevAnswer !== undefined && prevAnswer !== optionIdx;
+
+    setAnswers(prev => ({ ...prev, [q.id]: optionIdx }));
+
+    const rec = questionTimingMapRef.current[q.id];
+    if (rec) {
+      rec.answeredTimestampMs = Date.now();
+      rec.userAnswerIndex = optionIdx;
+      rec.skipped = false;
+      if (isChange) {
+        rec.answerChangeCount += 1;
+      }
+    }
+  };
+
+  const navigateToQuestion = (targetIdx: number) => {
+    if (targetIdx === currentIdx) return;
+    // Log time on current question
+    recordQuestionTimeSpent(q.id);
+
+    // Mark revisit if question was opened previously
+    const targetQ = MOCK_TEST_QUESTIONS[targetIdx];
+    const targetRec = questionTimingMapRef.current[targetQ.id];
+    if (targetRec) {
+      if (targetRec.openedTimestampMs > 0) {
+        targetRec.revisitCount += 1;
+      } else {
+        targetRec.openedTimestampMs = Date.now();
+      }
+    }
+
+    setCurrentIdx(targetIdx);
+    currentQEnterTimeRef.current = Date.now();
   };
 
   const handleSubmitTest = () => {
     setIsSubmitted(true);
     if (timerRef.current) clearInterval(timerRef.current);
+
+    // Finalize time for current active question
+    recordQuestionTimeSpent(q.id);
+
+    const testEndEpochMs = Date.now();
+    const durationMs = testEndEpochMs - testStartEpochMsRef.current;
+    const durationMinutes = Math.max(1, Math.round(durationMs / 60000));
 
     const testScore = MOCK_TEST_QUESTIONS.reduce(
       (acc, question) => acc + (answers[question.id] === question.correctAnswer ? 1 : 0),
@@ -78,7 +182,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const sessionId = `test_${Date.now()}`;
 
-    // Topic level performance
+    // Genuine Topic Performance
     const topicPerf = MOCK_TEST_QUESTIONS.map(qItem => ({
       topic: qItem.topic,
       score: answers[qItem.id] === qItem.correctAnswer ? 1 : 0,
@@ -86,7 +190,6 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       correct: answers[qItem.id] === qItem.correctAnswer,
     }));
 
-    // Derive genuine weak and strong topics based on question answers
     const missedTopics = MOCK_TEST_QUESTIONS
       .filter(qItem => answers[qItem.id] !== qItem.correctAnswer)
       .map(qItem => qItem.topic);
@@ -109,9 +212,11 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       ? { name: masteredTopics[0], mastery: 90 }
       : user.strongestTopic;
 
-    // Update user rankScore and academic progress honestly
     const newRankScore = (user.rankScore || 0) + testScore * 20;
-    const newProgress = Math.min(100, Math.max(user.overallProgress || 0, Math.round((masteredTopics.length / Math.max(1, MOCK_TEST_QUESTIONS.length)) * 100)));
+    const newProgress = Math.min(
+      100,
+      Math.max(user.overallProgress || 0, Math.round((masteredTopics.length / Math.max(1, MOCK_TEST_QUESTIONS.length)) * 100))
+    );
 
     const updatedUser = updateUserAcademicRecord(user.id, {
       weakTopics: updatedWeak,
@@ -130,14 +235,140 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
     const hasEeg = isDemo ? enableDemoEeg : isHardwareStreaming;
     const isSimulated = isDemo && enableDemoEeg;
 
-    const focusDyn: FocusTimePoint[] = hasEeg ? [
-      { timestamp: '00:00', minute: 1, attentionScore: 78, signalQuality: 98, phase: 'Test Start' },
-      { timestamp: '03:00', minute: 3, attentionScore: 86, signalQuality: 97, phase: 'Question 1' },
-      { timestamp: '06:00', minute: 6, attentionScore: 92, signalQuality: 95, phase: 'Question 2 (Peak)' },
-      { timestamp: '09:00', minute: 9, attentionScore: 84, signalQuality: 96, phase: 'Question 3' },
-      { timestamp: '12:00', minute: 12, attentionScore: 76, signalQuality: 91, phase: 'Question 4' },
-      { timestamp: '15:00', minute: 15, attentionScore: 80, signalQuality: 97, phase: 'Review & Submit' },
-    ] : [];
+    // Build timestamp-synchronized QuestionIntervalEvent[]
+    const questionEvents: QuestionIntervalEvent[] = MOCK_TEST_QUESTIONS.map((question, idx) => {
+      const rec = questionTimingMapRef.current[question.id] || {
+        questionId: question.id,
+        questionIndex: idx + 1,
+        topic: question.topic,
+        openedTimestampMs: testStartEpochMsRef.current + idx * 120000,
+        timeSpentSeconds: 120,
+        answerChangeCount: 0,
+        revisitCount: 0,
+        skipped: answers[question.id] === undefined,
+      };
+
+      const isCorrect = answers[question.id] === question.correctAnswer;
+      const skipped = answers[question.id] === undefined;
+
+      // Extract interval metrics if real hardware or simulated demo
+      let avgAttention = 78;
+      let avgSignalQuality = 96;
+      let isArtifact = false;
+      let confRating: 'Adequate' | 'Low' | 'Unreliable' = 'Adequate';
+
+      if (hasEeg && !isSimulated) {
+        const startMs = rec.openedTimestampMs || testStartEpochMsRef.current;
+        const endMs = rec.answeredTimestampMs || startMs + rec.timeSpentSeconds * 1000;
+        const metrics = eegService.computeIntervalMetrics(startMs, endMs);
+        avgAttention = metrics.avgAttention;
+        avgSignalQuality = metrics.avgQuality;
+        isArtifact = metrics.hasArtifact;
+        confRating = metrics.avgQuality < 80 ? 'Low' : 'Adequate';
+      } else if (isSimulated) {
+        // Pre-calibrated demo interval metrics
+        const demoAttentions = [80, 89, 93, 85, 74];
+        avgAttention = demoAttentions[idx % demoAttentions.length];
+        avgSignalQuality = idx === 4 ? 88 : 96;
+        isArtifact = idx === 4;
+        confRating = idx === 4 ? 'Low' : 'Adequate';
+      }
+
+      return {
+        questionId: question.id,
+        questionIndex: idx + 1,
+        topic: question.topic,
+        openedTimestampMs: rec.openedTimestampMs || testStartEpochMsRef.current,
+        answeredTimestampMs: rec.answeredTimestampMs,
+        timeSpentSeconds: Math.max(1, rec.timeSpentSeconds),
+        userAnswerIndex: answers[question.id],
+        correctAnswerIndex: question.correctAnswer,
+        isCorrect,
+        answerChangeCount: rec.answerChangeCount,
+        skipped,
+        revisited: rec.revisitCount > 0,
+        avgAttentionScore: hasEeg ? avgAttention : undefined,
+        avgSignalQuality: hasEeg ? avgSignalQuality : undefined,
+        isArtifactFlagged: isArtifact,
+        confidenceRating: confRating,
+      };
+    });
+
+    // Detect Focus Drop Events if EEG available
+    const focusDrops: FocusDropEvent[] = [];
+    if (hasEeg) {
+      questionEvents.forEach(evt => {
+        if (evt.avgAttentionScore && evt.avgAttentionScore < 76) {
+          focusDrops.push({
+            id: `drop_${evt.questionId}`,
+            timestampMs: evt.openedTimestampMs,
+            elapsedMinute: Math.max(1, Math.round((evt.openedTimestampMs - testStartEpochMsRef.current) / 60000)),
+            questionIndex: evt.questionIndex,
+            topic: evt.topic,
+            estimatedAttention: evt.avgAttentionScore,
+            signalQuality: evt.avgSignalQuality || 90,
+            confidence: evt.isArtifactFlagged ? 'Low' : 'High',
+            associatedAcademicContext: evt.isCorrect
+              ? `Answered correctly after ${evt.timeSpentSeconds}s and ${evt.answerChangeCount} answer change(s).`
+              : `Incorrect response selected. Time spent: ${evt.timeSpentSeconds}s.`,
+            explanation: evt.isArtifactFlagged
+              ? 'Estimated attention dipped below 76%; however, high electrode noise or eye blinks suggest signal artifact rather than confirmed cognitive disengagement.'
+              : 'Sub-76% attention index observed during complex analytical processing. Suggests possible mental fatigue onset.',
+          });
+        }
+      });
+    }
+
+    // Personalized Focus Improvement Coach Suggestions
+    const coachSuggestions: FocusCoachSuggestion[] = [];
+    if (hasEeg) {
+      // Find questions with long deliberation or revisions
+      const revisedQ = questionEvents.find(e => e.answerChangeCount > 0 && !e.isCorrect);
+      if (revisedQ) {
+        coachSuggestions.push({
+          id: `coach_rev_${sessionId}`,
+          title: `Reinforce ${revisedQ.topic} Foundations`,
+          observedPattern: `High cognitive effort and ${revisedQ.answerChangeCount} answer changes on Question ${revisedQ.questionIndex}, culminating in an incorrect choice.`,
+          supportingEvidence: `Attention index was maintained at ${revisedQ.avgAttentionScore}%, confirming active focus. The error indicates an underlying conceptual gap rather than an inattention lapse.`,
+          actionableStep: `Review textbook derivations and syntax rules for ${revisedQ.topic} prior to future timed attempts.`,
+          evaluationMethod: 'Retake a 3-question adaptive drill to verify mastery with zero hesitation changes.',
+          category: 'topic_revision',
+        });
+      }
+
+      const fatigueDrop = focusDrops[0];
+      if (fatigueDrop) {
+        coachSuggestions.push({
+          id: `coach_pacing_${sessionId}`,
+          title: 'Implement 90-Second Pacing Guardrail',
+          observedPattern: `Deliberation prolonged to Question ${fatigueDrop.questionIndex} near minute ${fatigueDrop.elapsedMinute}, coinciding with an attention fluctuation.`,
+          supportingEvidence: `Estimated attention fluctuated around ${fatigueDrop.estimatedAttention}% during this window.`,
+          actionableStep: 'If a question remains unparsed after 90 seconds, flag it, choose a preliminary best estimate, and proceed to avoid depleting working memory.',
+          evaluationMethod: 'Measure question timing standard deviation in the next mock test.',
+          category: 'pacing',
+        });
+      }
+    }
+
+    // Focus Dynamics Timeline
+    let focusDyn: FocusTimePoint[] = [];
+    if (hasEeg) {
+      if (!isSimulated && eegService.isRecordingActive()) {
+        const live = eegService.stopRecording();
+        if (live && live.focusDynamics) {
+          focusDyn = live.focusDynamics;
+        }
+      } else {
+        focusDyn = [
+          { timestamp: '00:00', minute: 1, attentionScore: 78, signalQuality: 98, phase: 'Test Start (Q1)' },
+          { timestamp: '03:00', minute: 3, attentionScore: 86, signalQuality: 97, phase: 'Question 1 → Q2' },
+          { timestamp: '06:00', minute: 6, attentionScore: 92, signalQuality: 95, phase: 'Q2: Pointer Deep Work' },
+          { timestamp: '09:00', minute: 9, attentionScore: 84, signalQuality: 96, phase: 'Q3: Probability' },
+          { timestamp: '12:00', minute: 12, attentionScore: 74, signalQuality: 88, isArtifact: true, phase: 'Q5: Deliberation' },
+          { timestamp: '15:00', minute: 15, attentionScore: 81, signalQuality: 97, phase: 'Final Review & Submit' },
+        ];
+      }
+    }
 
     const newSession: LearningSession = {
       id: sessionId,
@@ -147,16 +378,22 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       course: testCourse,
       topic: MOCK_TEST_QUESTIONS[0]?.topic || 'Curriculum Diagnostic',
       startTime: `Today, ${timeStr}`,
-      durationMinutes: 15,
+      startEpochMs: testStartEpochMsRef.current,
+      endEpochMs: testEndEpochMs,
+      durationMinutes,
       score: pctScore,
       totalQuestions: MOCK_TEST_QUESTIONS.length,
       correctAnswers: testScore,
+      skippedQuestions: MOCK_TEST_QUESTIONS.length - Object.keys(answers).length,
       hasEegData: hasEeg,
       isSimulated,
       topicPerformance: topicPerf,
+      questionEvents,
+      focusDropEvents: focusDrops,
+      coachSuggestions,
       focusDynamics: hasEeg ? focusDyn : undefined,
       neuralMetrics: hasEeg ? {
-        avgFocus: 83,
+        avgFocus: Math.round(questionEvents.reduce((acc, q) => acc + (q.avgAttentionScore || 80), 0) / questionEvents.length),
         peakFocus: 92,
         fatigueOnsetMinute: 12,
         thetaBetaRatio: 1.35,
@@ -165,7 +402,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
         coherence: 0.66,
         validCoveragePercent: 95,
         signalQualityStatus: 'Excellent',
-        artifactsDetectedCount: 1,
+        artifactsDetectedCount: questionEvents.filter(q => q.isArtifactFlagged).length,
         channels: {
           fp1: { label: 'FP1 (Left Frontal)', status: 'Active', impedanceKohm: 4.0 },
           fp2: { label: 'FP2 (Right Frontal)', status: 'Active', impedanceKohm: 4.2 },
@@ -176,7 +413,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
       aiRecommendations: hasEeg ? [
         {
           id: `rec_test_${sessionId}`,
-          recommendation: missedTopics.length > 0 
+          recommendation: missedTopics.length > 0
             ? `Reinforce foundational understanding in ${missedTopics.join(', ')}.`
             : 'Excellent performance across all assessed diagnostic modules.',
           evidence: `Attention averaged 83% throughout the test; test completed with ${testScore}/${MOCK_TEST_QUESTIONS.length} correct answers.`,
@@ -196,6 +433,8 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
     setCurrentIdx(0);
     setTimeLeft(15 * 60);
     setCreatedSessionId(null);
+    testStartEpochMsRef.current = Date.now();
+    currentQEnterTimeRef.current = Date.now();
   };
 
   const formatTime = (seconds: number) => {
@@ -276,7 +515,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                 {MOCK_TEST_QUESTIONS.map((question, idx) => (
                   <button
                     key={question.id}
-                    onClick={() => setCurrentIdx(idx)}
+                    onClick={() => navigateToQuestion(idx)}
                     className={`w-8 h-8 rounded-lg text-xs font-bold border transition-all ${
                       idx === currentIdx
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
@@ -351,7 +590,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                     {pct >= 80 ? 'Outstanding Diagnostic!' : pct >= 60 ? 'Solid Academic Effort' : 'Needs Topic Review'}
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">
-                    You scored {score} out of {MOCK_TEST_QUESTIONS.length} questions correctly. Academic records and weakness rankings have been updated.
+                    You scored {score} out of {MOCK_TEST_QUESTIONS.length} questions correctly. Academic records, weakness rankings, and synchronized question intervals have been updated.
                   </p>
                 </div>
               </div>
@@ -372,14 +611,14 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                         }`}
                       >
                         <span className="font-semibold">{question.topic}</span>
-                        <span className="font-bold">{isPassed ? '✓ Mastered' : '✗ Weak Topic Identified'}</span>
+                        <span className="font-bold">{isPassed ? 'Mastered' : 'Needs Practice'}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Neuro Analysis Card */}
+              {/* Neuro Analysis Card with Link to Synchronized Analysis */}
               {(isDemo && enableDemoEeg) || isHardwareStreaming ? (
                 <div className="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -387,9 +626,9 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                       <Brain className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-indigo-950">NeuroFocus Session Recorded</h4>
+                      <h4 className="text-xs font-bold text-indigo-950">Synchronized NeuroFocus Report Available</h4>
                       <p className="text-[11px] text-indigo-700">
-                        {isHardwareStreaming ? 'Live physiological recording saved.' : 'Demo neural focus dynamics recorded.'}
+                        {isHardwareStreaming ? 'Live physiological EEG aligned with question intervals.' : 'Demo question timestamps and Focus Dynamics recorded.'}
                       </p>
                     </div>
                   </div>
@@ -399,9 +638,10 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
                         onClose();
                         onNavigateToNeuroAnalysis(createdSessionId);
                       }}
-                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shrink-0"
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shrink-0 shadow-sm"
                     >
-                      <span>View Neuro Report</span>
+                      <Activity className="w-4 h-4" />
+                      <span>View Question-by-Question Neuro Report</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -414,11 +654,11 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
               )}
 
               {/* Per-question breakdown */}
-              <h3 className="text-base font-black text-slate-800">Question Review</h3>
+              <h3 className="text-base font-black text-slate-800">Question Review & Explanations</h3>
               {MOCK_TEST_QUESTIONS.map((question, idx) => {
                 const userAnswerIdx = answers[question.id];
                 const isCorrect = userAnswerIdx === question.correctAnswer;
-                const userAnswerText = userAnswerIdx !== undefined ? question.options[userAnswerIdx] : 'Not answered';
+                const userAnswerText = userAnswerIdx !== undefined ? question.options[userAnswerIdx] : 'Not answered (Skipped)';
                 const correctAnswerText = question.options[question.correctAnswer];
                 return (
                   <div key={question.id} className={`bg-white rounded-2xl border p-5 ${isCorrect ? 'border-emerald-200' : 'border-rose-200'}`}>
@@ -458,7 +698,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
             <>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setCurrentIdx(i => Math.max(0, i - 1))}
+                  onClick={() => navigateToQuestion(Math.max(0, currentIdx - 1))}
                   disabled={isFirst}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
                 >
@@ -481,7 +721,7 @@ export const MockTestModal: React.FC<MockTestModalProps> = ({
 
               {!isLast ? (
                 <button
-                  onClick={() => setCurrentIdx(i => Math.min(MOCK_TEST_QUESTIONS.length - 1, i + 1))}
+                  onClick={() => navigateToQuestion(Math.min(MOCK_TEST_QUESTIONS.length - 1, currentIdx + 1))}
                   className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-sm text-sm"
                 >
                   Next
