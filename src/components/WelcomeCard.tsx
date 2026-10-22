@@ -24,6 +24,7 @@ interface WelcomeCardProps {
   onNavigateMessages?: () => void;
   onNavigateTests?: () => void;
   onNavigateNeuroAnalysis?: () => void;
+  onNavigateHardware?: () => void;
 }
 
 export const WelcomeCard: React.FC<WelcomeCardProps> = ({
@@ -298,7 +299,7 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({
                 <span className="text-[11px] text-slate-400 font-medium">Quick Pathways</span>
               </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5">
                 {/* Action 1: 10-minute revision (Emerald) */}
                 <button
                   onClick={() => onOpenRevision(recommendedTopic?.name || 'Functions')}

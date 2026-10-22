@@ -19,6 +19,7 @@ interface NeuroAnalysisPageProps {
   onNavigateToTests: () => void;
   onStartStudySession: () => void;
   onOpenHardwareManager?: () => void;
+  onNavigateToHardwareRig?: () => void;
 }
 
 export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
@@ -27,6 +28,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
   onNavigateToTests,
   onStartStudySession,
   onOpenHardwareManager,
+  onNavigateToHardwareRig,
 }) => {
   const isDemo = isDemoUser(user.id, user.email);
   const [sessions, setSessions] = useState<LearningSession[]>(() => getStudentSessions(user.id));

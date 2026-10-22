@@ -48,6 +48,7 @@ const PRIMARY_NAV: NavItemDef[] = [
 
 // ── SECONDARY NAVIGATION (Seamlessly available via 'More' on standard screens) ──
 const SECONDARY_NAV: NavItemDef[] = [
+  { label: 'Hardware Rig', page: 'hardware-integration', icon: Cpu, description: 'Live EEG signal stream and hardware adapter', accent: 'text-cyan-600' },
   { label: 'AI Classroom', page: 'ai-classroom', icon: Bot, description: 'Interactive Socratic tutor and whiteboard', accent: 'text-violet-600' },
   { label: 'Community', page: 'community', icon: Users, description: 'Peer Q&A, faculty announcements and notes', accent: 'text-emerald-600' },
   { label: 'Leaderboard', page: 'leaderboard', icon: Trophy, description: 'Academic ranks, XP, and badges', accent: 'text-amber-600' },
@@ -457,28 +458,28 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Search className="w-4 h-4" />
           </button>
 
-          {/* BioAmp Hardware Status Pill */}
-          {onOpenHardwareManager && (
-            <button
-              onClick={onOpenHardwareManager}
-              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all shrink-0 ${
-                eegState === 'streaming'
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : eegState === 'connected'
-                  ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-              }`}
-              title={`BioAmp EXG Pill Hardware: ${eegState}`}
-            >
-              <Cpu className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden xl:inline">
-                {eegState === 'streaming' ? 'BioAmp: Live' : eegState === 'connected' ? 'BioAmp: Ready' : 'BioAmp HW'}
-              </span>
-              {eegState === 'streaming' && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              )}
-            </button>
-          )}
+          {/* Hardware Integration Dashboard Pill */}
+          <button
+            onClick={() => onNavigate('hardware-integration')}
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all shrink-0 ${
+              currentPage === 'hardware-integration'
+                ? 'bg-cyan-600 text-white border-cyan-700 shadow-2xs'
+                : eegState === 'streaming'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                : eegState === 'connected'
+                ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
+                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+            }`}
+            title={`Hardware Ingestion Rig & Live Signal: ${eegState}`}
+          >
+            <Cpu className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden xl:inline">
+              {currentPage === 'hardware-integration' ? 'Hardware Rig' : eegState === 'streaming' ? 'EEG Live' : eegState === 'connected' ? 'EEG Ready' : 'Hardware Rig'}
+            </span>
+            {eegState === 'streaming' && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            )}
+          </button>
 
           {/* Timer Quick Pill (Wide screens only) */}
           {currentUser.role === 'Student' && currentUser.streakDays ? (

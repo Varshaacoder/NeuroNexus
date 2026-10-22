@@ -24,6 +24,7 @@ import { MessagingPage } from './components/MessagingPage';
 import { TestsPage } from './components/TestsPage';
 import { NeuroAnalysisPage } from './components/NeuroAnalysisPage';
 import { BioAmpHardwareModal } from './components/BioAmpHardwareModal';
+import { HardwareDashboard } from './components/HardwareDashboard';
 import { SMART_REMINDERS, INITIAL_MESSAGES } from './mockData';
 import { isDemoUser, resetDemoData } from './utils/neuroSessionStore';
 import type { UserProfile, AppPage } from './types';
@@ -145,6 +146,15 @@ export default function App() {
             onNavigateToTests={() => setCurrentPage('tests')}
             onStartStudySession={() => setOpenModal('pomodoro')}
             onOpenHardwareManager={() => setShowHardwareModal(true)}
+            onNavigateToHardwareRig={() => setCurrentPage('hardware-integration')}
+          />
+        );
+      case 'hardware-integration':
+        return (
+          <HardwareDashboard
+            user={currentUser}
+            onNavigateToNeuroAnalysis={() => setCurrentPage('neuro-analysis')}
+            onOpenTimer={() => setOpenModal('pomodoro')}
           />
         );
       case 'leaderboard':
@@ -178,6 +188,7 @@ export default function App() {
         onNavigateMessages={() => setCurrentPage('messages')}
         onNavigateTests={() => setCurrentPage('tests')}
         onNavigateNeuroAnalysis={() => setCurrentPage('neuro-analysis')}
+        onNavigateHardware={() => setCurrentPage('hardware-integration')}
       />
 
       {/* Two-column: AI Summary + Reminders */}

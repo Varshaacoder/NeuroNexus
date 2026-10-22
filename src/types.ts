@@ -81,6 +81,7 @@ export type AppPage =
   | 'courses'
   | 'tests'
   | 'neuro-analysis'
+  | 'hardware-integration'
   | 'community'
   | 'leaderboard'
   | 'messages'
