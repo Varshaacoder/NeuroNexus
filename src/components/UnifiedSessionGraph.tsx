@@ -16,7 +16,7 @@ interface UnifiedSessionGraphProps {
   onSelectQuestion?: (idx: number | null) => void;
 }
 
-export type TooltipItemType = 'eeg_marker' | 'academic_event' | 'phase_annotation' | 'blink_quarantine';
+export type DotCategory = 'rose' | 'amber' | 'indigo' | 'mint' | 'skyblue' | 'lavender' | 'missing';
 
 export interface MarkerDatum {
   minute: number;
@@ -24,15 +24,21 @@ export interface MarkerDatum {
   attentionScore: number;
   signalQuality: number;
   isArtifact: boolean;
-  markerCategory: 'rose' | 'amber' | 'indigo' | 'missing';
+  dotCategory: DotCategory;
+  categoryLabel: string;
+  title: string;
+  description: string;
   phase?: string;
-  // Academic sync
-  academicEventType?: 'question_start' | 'question_answer' | 'pomodoro_focus' | 'pomodoro_break' | 'pause';
+  // Academic context
   questionNumber?: number;
   questionTopic?: string;
   isCorrect?: boolean;
   timeSpentSeconds?: number;
-  // Annotation sync
+  answerChangeCount?: number;
+  // Pomodoro / Study context
+  pomodoroEventTitle?: string;
+  pomodoroEventDetail?: string;
+  // Phase annotation context
   phaseAnnotation?: {
     name: string;
     description: string;
@@ -47,14 +53,14 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
   onSelectQuestion,
 }) => {
   const [activeFilterTrack, setActiveFilterTrack] = useState<'all' | 'eeg' | 'academic'>('all');
-  const [activeAnnotationHover, setActiveAnnotationHover] = useState<string | null>(null);
+  const [activePointIndex, setActivePointIndex] = useState<number | null>(null);
 
   const durationMin = Math.max(1, session.durationMinutes || 15);
   const isDemo = session.isSimulated;
 
-  // ── 1. COMPOSE UNIFIED TIMELINE POINTS (EEG + Academic Events) ──────────────
+  // ── 1. COMPOSE DATA-DRIVEN TIMELINE WITH CUTE MULTICOLOURED DOTS ──────────
   const chartData: MarkerDatum[] = useMemo(() => {
-    // If session has focusDynamics, map them directly
+    // Collect all event timestamps
     const rawDynamics = session.focusDynamics && session.focusDynamics.length > 0
       ? session.focusDynamics
       : Array.from({ length: durationMin }, (_, i) => ({
@@ -66,107 +72,183 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
           phase: i < 5 ? 'Warmup' : i < 12 ? 'Deep Focus' : 'Wrapup',
         }));
 
-    return rawDynamics.map((pt, idx) => {
+    // Map base timeline
+    const basePoints: MarkerDatum[] = rawDynamics.map((pt, idx) => {
       const min = pt.minute || (idx + 1);
       const sqi = pt.signalQuality ?? 95;
       const isArt = !!pt.isArtifact;
+      const score = pt.attentionScore ?? 75;
 
-      // Marker Category Priority:
-      // 1. Artifact-flagged intervals -> Rose
-      // 2. Otherwise quality < 90% -> Amber
-      // 3. Quality >= 90% and valid -> Indigo
-      // 4. Missing/invalid -> Missing
-      let markerCategory: MarkerDatum['markerCategory'] = 'indigo';
-      if (!session.hasEegData) {
-        markerCategory = 'missing';
-      } else if (isArt) {
-        markerCategory = 'rose';
-      } else if (sqi < 90) {
-        markerCategory = 'amber';
-      } else {
-        markerCategory = 'indigo';
-      }
-
-      // Check corresponding question event matching this minute
-      let qEvt: QuestionIntervalEvent | undefined = undefined;
-      if (session.questionEvents && session.questionEvents.length > 0) {
-        // Map by question index or proportional time
-        const qIdx = Math.min(session.questionEvents.length - 1, Math.floor((min / durationMin) * session.questionEvents.length));
-        qEvt = session.questionEvents[qIdx];
-      }
-
-      // Check corresponding Pomodoro phase
-      let pomoPhase: PomodoroPhaseRecord | undefined = undefined;
-      if (session.pomodoroPhases && session.pomodoroPhases.length > 0) {
-        let cumulativeSec = 0;
-        for (const p of session.pomodoroPhases) {
-          cumulativeSec += p.durationSeconds;
-          if (min * 60 <= cumulativeSec) {
-            pomoPhase = p;
-            break;
-          }
-        }
-      }
-
-      // Phase annotations mapping
+      // Check if this minute aligns with a cognitive phase landmark
       let phaseAnnotation: MarkerDatum['phaseAnnotation'] = undefined;
-      if (min >= 1 && min <= 5) {
+      let isLandmark = false;
+      let landmarkTitle = '';
+      let landmarkDesc = '';
+
+      if (min === 1) {
+        isLandmark = true;
+        landmarkTitle = 'Warmup Phase Calibration';
+        landmarkDesc = 'Initial cognitive baseline calibration and contact stabilization.';
         phaseAnnotation = {
-          name: 'Warmup Phase (Calibration)',
-          description: 'Cognitive baseline calibration window.',
-          evidenceSource: isDemo ? 'Synthetic Sine Superposition' : 'Early Frontal Coherence Stabilization',
+          name: landmarkTitle,
+          description: landmarkDesc,
+          evidenceSource: isDemo ? 'Multi-band Baseline Synthesis' : 'Frontal Coherence Baseline',
           status: isDemo ? 'simulated' : 'reference-only',
         };
-      } else if (min > 5 && min <= 12) {
+      } else if (min === 5) {
+        isLandmark = true;
+        landmarkTitle = 'Deep Engagement Transition';
+        landmarkDesc = 'Frontal Beta rhythm stabilization and sustained task focus.';
         phaseAnnotation = {
-          name: 'Deep Engagement Block',
-          description: 'Peak frontal beta stability and sustained analytical focus.',
-          evidenceSource: isDemo ? 'Simulated 18Hz Beta Rhythm' : 'Theta/Beta Ratio < 1.40',
+          name: landmarkTitle,
+          description: landmarkDesc,
+          evidenceSource: isDemo ? 'Beta 18Hz Frequency Injection' : 'Theta/Beta Ratio < 1.40',
           status: isDemo ? 'simulated' : session.hasEegData ? 'measured' : 'unavailable',
         };
       } else if (min === 12 || min === session.neuralMetrics?.fatigueOnsetMinute) {
+        isLandmark = true;
+        landmarkTitle = 'Fatigue Onset Landmark';
+        landmarkDesc = 'Frontal Theta elevation and response deliberation latency.';
         phaseAnnotation = {
-          name: 'Fatigue Onset & Theta Power Shift',
-          description: 'Elevated theta power and micro-deliberation latency.',
-          evidenceSource: isDemo ? 'Simulated Theta Injection' : 'Recorded Spectral Shift',
+          name: landmarkTitle,
+          description: landmarkDesc,
+          evidenceSource: isDemo ? 'Elevated Theta Power Curve' : 'Spectral Shift (Theta/Alpha Rise)',
           status: isDemo ? 'simulated' : session.hasEegData ? 'inferred' : 'unavailable',
         };
+      }
+
+      // Check if this minute matches a Pomodoro event
+      let isPomoEvent = false;
+      let pomoTitle = '';
+      let pomoDesc = '';
+      if (session.type === 'pomodoro' && session.pomodoroPhases && session.pomodoroPhases.length > 0) {
+        if (min === 1) {
+          isPomoEvent = true;
+          pomoTitle = 'Pomodoro Focus Block Started';
+          pomoDesc = 'Active 25-minute deep study interval commenced.';
+        } else if (min === session.focusMinutes || min === 25) {
+          isPomoEvent = true;
+          pomoTitle = 'Pomodoro Break Relaxation Transition';
+          pomoDesc = 'Focus interval completed. Restorative relaxation break active.';
+        } else if (min === durationMin) {
+          isPomoEvent = true;
+          pomoTitle = 'Pomodoro Cycle Complete';
+          pomoDesc = 'Full study cycle and relaxation break completed successfully.';
+        }
+      } else if (session.type === 'study' && min === durationMin) {
+        isPomoEvent = true;
+        pomoTitle = 'Study Target Achieved';
+        pomoDesc = `Completed ${durationMin} minutes of dedicated study time.`;
+      }
+
+      // STRICT PRIORITY FOR COLOUR-CODED DOTS:
+      let dotCategory: DotCategory = 'indigo';
+      let categoryLabel = 'Indigo: Usable Attention';
+      let title = 'Usable Neural Reading';
+      let description = `Adequate signal quality (SQI ${sqi}%); attention estimate considered usable.`;
+
+      if (!session.hasEegData) {
+        dotCategory = 'missing';
+        categoryLabel = 'Missing / Gap (No EEG)';
+        title = 'Academic Tracking Interval';
+        description = 'No EEG hardware stream was connected. Academic data preserved without fake readings.';
       } else if (isArt) {
-        phaseAnnotation = {
-          name: 'Blink / EOG Filtering Interval',
-          description: 'Automatic EOG artifact quarantine — excluded from focus aggregation.',
-          evidenceSource: 'Frontopolar Waveform Peak Filter (>500µV or high delta slope)',
-          status: isDemo ? 'simulated' : 'measured',
-        };
+        dotCategory = 'rose';
+        categoryLabel = 'Rose: Artifact Flagged';
+        title = 'EOG Blink / Motion Artifact';
+        description = 'Detected high-amplitude ocular or motion transient (>500µV); quarantined from focus calculation.';
+      } else if (sqi < 90) {
+        dotCategory = 'amber';
+        categoryLabel = 'Amber: Low SQI (<90%)';
+        title = 'Low Signal Quality';
+        description = `Signal quality is ${sqi}%; attention estimate has low confidence due to electrode impedance.`;
+      } else if (isPomoEvent) {
+        dotCategory = 'mint';
+        categoryLabel = 'Mint: Study / Pomodoro Event';
+        title = pomoTitle;
+        description = pomoDesc;
+      } else if (isLandmark) {
+        dotCategory = 'lavender';
+        categoryLabel = 'Lavender: Phase Landmark';
+        title = landmarkTitle;
+        description = landmarkDesc;
       }
 
       return {
         minute: min,
-        timestamp: pt.timestamp || `${min} min`,
-        attentionScore: session.hasEegData ? pt.attentionScore : 0,
+        timestamp: pt.timestamp || `${min}m`,
+        attentionScore: session.hasEegData ? score : 0,
         signalQuality: session.hasEegData ? sqi : 0,
         isArtifact: isArt,
-        markerCategory,
+        dotCategory,
+        categoryLabel,
+        title,
+        description,
         phase: pt.phase,
-        academicEventType: qEvt ? (qEvt.isCorrect ? 'question_answer' : 'question_start') : pomoPhase ? (pomoPhase.phaseType === 'focus' ? 'pomodoro_focus' : 'pomodoro_break') : undefined,
-        questionNumber: qEvt?.questionIndex,
-        questionTopic: qEvt?.topic,
-        isCorrect: qEvt?.isCorrect,
-        timeSpentSeconds: qEvt?.timeSpentSeconds,
         phaseAnnotation,
+        pomodoroEventTitle: isPomoEvent ? pomoTitle : undefined,
+        pomodoroEventDetail: isPomoEvent ? pomoDesc : undefined,
       };
     });
+
+    // If assessment has question events, integrate exact question milestone points!
+    if (session.questionEvents && session.questionEvents.length > 0) {
+      const questionPoints: MarkerDatum[] = session.questionEvents.map((q, qIdx) => {
+        // Compute exact fractional minute along the duration
+        const step = durationMin / (session.questionEvents!.length + 1);
+        const qMin = Math.round(((qIdx + 1) * step) * 10) / 10;
+        const qScore = q.avgAttentionScore ?? (session.neuralMetrics?.avgFocus || 78);
+        const qSqi = q.avgSignalQuality ?? 94;
+
+        return {
+          minute: qMin,
+          timestamp: `${qMin}m`,
+          attentionScore: session.hasEegData ? qScore : 0,
+          signalQuality: session.hasEegData ? qSqi : 0,
+          isArtifact: !!q.isArtifactFlagged,
+          dotCategory: 'skyblue',
+          categoryLabel: 'Sky Blue: Test / Assessment',
+          title: `Question ${q.questionIndex}: ${q.topic}`,
+          description: `${q.isCorrect ? '✓ Correctly answered' : '✗ Incorrect response'} in ${q.timeSpentSeconds}s with ${q.answerChangeCount} revision(s).`,
+          questionNumber: q.questionIndex,
+          questionTopic: q.topic,
+          isCorrect: q.isCorrect,
+          timeSpentSeconds: q.timeSpentSeconds,
+          answerChangeCount: q.answerChangeCount,
+        };
+      });
+
+      // Merge and sort chronologically by minute
+      const merged = [...basePoints, ...questionPoints].sort((a, b) => a.minute - b.minute);
+      return merged;
+    }
+
+    return basePoints;
   }, [session, durationMin, isDemo]);
 
+  // Color mapping configuration
+  const colorStyles: Record<DotCategory, { fill: string; stroke: string; glow: string; text: string; bg: string }> = {
+    rose: { fill: '#fb7185', stroke: '#ffffff', glow: 'rgba(251, 113, 133, 0.45)', text: 'text-rose-600', bg: 'bg-[#fb7185]' },
+    amber: { fill: '#fbbf24', stroke: '#ffffff', glow: 'rgba(251, 191, 36, 0.45)', text: 'text-amber-600', bg: 'bg-[#fbbf24]' },
+    indigo: { fill: '#6366f1', stroke: '#ffffff', glow: 'rgba(99, 102, 241, 0.45)', text: 'text-indigo-600', bg: 'bg-[#6366f1]' },
+    mint: { fill: '#34d399', stroke: '#ffffff', glow: 'rgba(52, 211, 153, 0.45)', text: 'text-emerald-600', bg: 'bg-[#34d399]' },
+    skyblue: { fill: '#38bdf8', stroke: '#ffffff', glow: 'rgba(56, 189, 248, 0.45)', text: 'text-sky-600', bg: 'bg-[#38bdf8]' },
+    lavender: { fill: '#c084fc', stroke: '#ffffff', glow: 'rgba(192, 132, 252, 0.45)', text: 'text-purple-600', bg: 'bg-[#c084fc]' },
+    missing: { fill: '#cbd5e1', stroke: '#94a3b8', glow: 'transparent', text: 'text-slate-500', bg: 'bg-slate-300' },
+  };
+
+  const hasPomodoroEvents = session.type === 'pomodoro' || session.type === 'study';
+  const hasAcademicEvents = !!(session.questionEvents && session.questionEvents.length > 0);
+
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-6">
+    <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-4">
       
       {/* ── TOP HEADER & TRACK SELECTOR ──────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-slate-100">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-black text-base text-slate-900">
-              Synchronized Multi-Track Session Timeline & Analysis Graph
+              Session Focus Dynamics & Timeline
             </h3>
             {isDemo ? (
               <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300">
@@ -183,12 +265,12 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
             )}
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Synchronized alignment of biometric EEG markers, signal quality (SQI), artifact quarantines, study timer intervals, and per-question assessment events.
+            Continuous waveform with timestamp-synchronized markers for signal quality, artifact quarantines, study timers, and test questions.
           </p>
         </div>
 
         {/* Track Filters */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold shrink-0">
           <button
             onClick={() => setActiveFilterTrack('all')}
             className={`px-3 py-1 rounded-lg transition-all ${
@@ -216,7 +298,7 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
         </div>
       </div>
 
-      {/* ── INTERACTIVE GRAPH VIEWPORT (Composed Recharts with Sync Axes) ────── */}
+      {/* ── INTERACTIVE GRAPH VIEWPORT WITH SMALL, CUTE MULTICOLOURED DOTS ──── */}
       <div className="h-72 sm:h-80 w-full bg-slate-50/70 rounded-2xl border border-slate-200/90 p-4 relative">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
@@ -225,7 +307,7 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
           >
             <defs>
               <linearGradient id="attentionAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.28} />
+                <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.25} />
                 <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.0} />
               </linearGradient>
             </defs>
@@ -235,13 +317,12 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
             <XAxis
               dataKey="minute"
               type="number"
-              domain={[1, durationMin]}
+              domain={[0, durationMin]}
               tickFormatter={(m) => `${m}m`}
               tick={{ fontSize: 11, fill: '#64748b' }}
               label={{ value: 'Session Duration (Minutes Elapsed)', position: 'insideBottom', offset: -6, fill: '#94a3b8', fontSize: 11 }}
             />
 
-            {/* Left Axis: Focus Index & Signal Quality */}
             <YAxis
               yAxisId="left"
               domain={[30, 100]}
@@ -249,98 +330,91 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
               label={{ value: 'Attention & SQI (0–100%)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 11 }}
             />
 
-            {/* Reference Range Visualizations */}
-            <ReferenceArea yAxisId="left" x1={1} x2={Math.min(5, durationMin)} fill="#f1f5f9" fillOpacity={0.5} label={{ value: 'Warmup Phase (Calibration)', position: 'top', fill: '#94a3b8', fontSize: 10 }} />
+            {/* Subtle Reference Calibration Windows */}
+            <ReferenceArea yAxisId="left" x1={0} x2={Math.min(5, durationMin)} fill="#f1f5f9" fillOpacity={0.5} />
             {durationMin >= 12 && (
-              <ReferenceLine yAxisId="left" x={12} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: 'Fatigue Onset (Min 12)', fill: '#d97706', fontSize: 10, position: 'insideTopRight' }} />
+              <ReferenceLine yAxisId="left" x={12} stroke="#f59e0b" strokeDasharray="4 4" strokeOpacity={0.7} />
             )}
 
             {/* Custom Interactive Tooltip */}
             <Tooltip
-              content={({ active, payload, label }) => {
+              content={({ active, payload }) => {
                 if (!active || !payload || !payload.length) return null;
                 const datum = payload[0].payload as MarkerDatum;
                 if (!datum) return null;
 
+                const style = colorStyles[datum.dotCategory] || colorStyles.indigo;
+
                 return (
-                  <div className="p-3.5 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl shadow-xl border border-slate-700 text-xs space-y-2 max-w-xs z-50 animate-in fade-in zoom-in-95 duration-100">
-                    <div className="flex items-center justify-between border-b border-slate-700 pb-1.5">
-                      <span className="font-black text-indigo-300">
-                        Minute {datum.minute} ({datum.timestamp})
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        datum.markerCategory === 'rose'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : datum.markerCategory === 'amber'
-                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                          : datum.markerCategory === 'indigo'
-                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                          : 'bg-slate-700 text-slate-300'
-                      }`}>
-                        {datum.markerCategory === 'rose' ? '● Rose: Artifact Flag' :
-                         datum.markerCategory === 'amber' ? '● Amber: SQI < 90%' :
-                         datum.markerCategory === 'indigo' ? '● Indigo: Adequate' : 'No EEG'}
+                  <div className="p-3 bg-slate-900/95 backdrop-blur-md text-white rounded-xl shadow-xl border border-slate-700/80 text-xs space-y-2 max-w-xs z-50 pointer-events-none transition-all">
+                    {/* Category header with matching cute dot */}
+                    <div className="flex items-center justify-between border-b border-slate-700/80 pb-1.5 gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${style.bg} shadow-xs ring-1 ring-white/40`} />
+                        <span className={`font-black text-[11px] ${style.text}`}>
+                          {datum.categoryLabel}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Min {datum.minute} ({datum.timestamp})
                       </span>
                     </div>
 
-                    {/* EEG Metrics */}
+                    {/* Event Title & Description */}
+                    <div>
+                      <div className="font-bold text-white text-[12px] leading-snug">
+                        {datum.title}
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed mt-0.5">
+                        {datum.description}
+                      </p>
+                    </div>
+
+                    {/* Relevant Measurements */}
                     {session.hasEegData ? (
-                      <div className="space-y-1 text-[11px] text-slate-300">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Estimated Attention:</span>
+                      <div className="pt-1.5 border-t border-slate-700/60 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-slate-300">
+                        <div>
+                          <span className="text-slate-400 block">Attention Index:</span>
                           <span className="font-bold text-white font-mono">{datum.attentionScore}%</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Signal Quality (SQI):</span>
+                        <div>
+                          <span className="text-slate-400 block">Signal Quality:</span>
                           <span className={`font-bold font-mono ${datum.signalQuality >= 90 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                            {datum.signalQuality}%
+                            {datum.signalQuality}% SQI
                           </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Artifact Status:</span>
-                          <span className={datum.isArtifact ? 'text-rose-400 font-bold' : 'text-slate-400'}>
-                            {datum.isArtifact ? 'Flagged (Quarantined)' : 'None'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-[10px]">
-                          <span className="text-slate-500">Data Source:</span>
-                          <span className="text-purple-300 font-bold">{isDemo ? 'Simulation Engine' : 'BioAmp Hardware'}</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="text-[11px] text-slate-400 italic">
-                        No EEG data stream active for this timestamp interval.
+                      <div className="pt-1 text-[10px] text-slate-400 italic">
+                        Hardware recording inactive for this interval.
                       </div>
                     )}
 
-                    {/* Academic Event Context */}
+                    {/* Specific Question / Academic Context */}
                     {datum.questionNumber && (
-                      <div className="pt-1.5 border-t border-slate-700/80 text-[11px] space-y-0.5">
-                        <div className="font-bold text-amber-300 flex items-center justify-between">
-                          <span>Question {datum.questionNumber} Interval</span>
-                          <span>{datum.isCorrect ? '✓ Correct' : '✗ Missed'}</span>
-                        </div>
-                        <div className="text-slate-300 truncate">{datum.questionTopic}</div>
-                        <div className="text-slate-400 text-[10px]">Time invested: {datum.timeSpentSeconds || 60}s</div>
+                      <div className="pt-1 border-t border-slate-700/60 text-[10px] text-slate-300 flex items-center justify-between">
+                        <span>Q{datum.questionNumber}: {datum.questionTopic}</span>
+                        <span className={`font-bold px-1.5 py-0.2 rounded text-[9px] ${
+                          datum.isCorrect ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                        }`}>
+                          {datum.isCorrect ? '✓ Correct' : '✗ Missed'}
+                        </span>
                       </div>
                     )}
 
-                    {/* Phase Annotation Details */}
-                    {datum.phaseAnnotation && (
-                      <div className="pt-1.5 border-t border-slate-700/80 text-[10px] space-y-0.5 text-slate-300">
-                        <div className="font-bold text-indigo-300">{datum.phaseAnnotation.name}</div>
-                        <p className="text-slate-400 leading-tight">{datum.phaseAnnotation.description}</p>
-                        <div className="text-[9px] text-slate-500 pt-0.5">
-                          Evidence: {datum.phaseAnnotation.evidenceSource} ({datum.phaseAnnotation.status})
-                        </div>
-                      </div>
-                    )}
+                    {/* Provenance note */}
+                    <div className="text-[9px] text-slate-400 pt-0.5 border-t border-slate-700/40 flex justify-between items-center">
+                      <span>Provenance:</span>
+                      <span className={isDemo ? 'text-amber-300 font-bold' : 'text-emerald-300 font-bold'}>
+                        {isDemo ? 'Demo Mode (Simulated)' : 'BioAmp v1.5 Hardware'}
+                      </span>
+                    </div>
                   </div>
                 );
               }}
             />
 
-            {/* Track 1: EEG Attention Area & Signal Quality Line */}
+            {/* Continuous EEG Waveform Area with Cute Multicoloured Dots */}
             {(activeFilterTrack === 'all' || activeFilterTrack === 'eeg') && session.hasEegData && (
               <>
                 <Area
@@ -348,62 +422,75 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
                   type="monotone"
                   dataKey="attentionScore"
                   stroke="#4f46e5"
-                  strokeWidth={2.5}
+                  strokeWidth={2}
                   fill="url(#attentionAreaGrad)"
                   dot={(props: any) => {
                     const { cx, cy, payload, index } = props;
+                    if (!cx || !cy || !payload) return null;
                     const datum = payload as MarkerDatum;
 
-                    // PHASE 4 COLOUR-CODED DOTS:
-                    // 1. Rose dots: Artifact-flagged intervals
-                    if (datum.markerCategory === 'rose') {
-                      return (
-                        <circle
-                          key={`rose-${index}`}
-                          cx={cx}
-                          cy={cy}
-                          r={4.5}
-                          fill="#fb7185"
-                          stroke="#e11d48"
-                          strokeWidth={2}
-                          className="animate-pulse"
-                        />
-                      );
+                    // Filter based on active track
+                    if (activeFilterTrack === 'eeg' && datum.dotCategory === 'skyblue') {
+                      return null;
                     }
 
-                    // 2. Amber dots: Signal quality < 90%
-                    if (datum.markerCategory === 'amber') {
-                      return (
-                        <circle
-                          key={`amber-${index}`}
-                          cx={cx}
-                          cy={cy}
-                          r={4}
-                          fill="#fbbf24"
-                          stroke="#d97706"
-                          strokeWidth={1.5}
-                        />
-                      );
-                    }
+                    const theme = colorStyles[datum.dotCategory] || colorStyles.indigo;
+                    const isHovered = activePointIndex === index;
+                    const isSelected = selectedQuestionIndex && datum.questionNumber === selectedQuestionIndex;
 
-                    // 3. Indigo dots: Adequate signal quality (>= 90%)
-                    if (datum.markerCategory === 'indigo') {
-                      return (
+                    return (
+                      <g
+                        key={`cute-dot-${index}`}
+                        className="cursor-pointer"
+                        onMouseEnter={() => setActivePointIndex(index)}
+                        onMouseLeave={() => setActivePointIndex(null)}
+                        onClick={() => {
+                          if (datum.questionNumber && onSelectQuestion) {
+                            onSelectQuestion(datum.questionNumber);
+                          }
+                        }}
+                      >
+                        {/* Subtle hover glow halo */}
+                        {(isHovered || isSelected) && (
+                          <>
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={7.5}
+                              fill={theme.glow}
+                              className="animate-pulse"
+                            />
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={5.5}
+                              fill="none"
+                              stroke={theme.fill}
+                              strokeWidth={1}
+                              strokeOpacity={0.6}
+                            />
+                          </>
+                        )}
+
+                        {/* Small, cute circular marker (approx 6.5px diameter) */}
                         <circle
-                          key={`indigo-${index}`}
                           cx={cx}
                           cy={cy}
-                          r={3.5}
-                          fill="#4f46e5"
+                          r={isHovered || isSelected ? 4.2 : 3.3}
+                          fill={theme.fill}
                           stroke="#ffffff"
-                          strokeWidth={1}
+                          strokeWidth={1.2}
+                          style={{
+                            filter: isHovered
+                              ? `drop-shadow(0 0 4px ${theme.glow})`
+                              : 'drop-shadow(0 1px 1.5px rgba(0,0,0,0.12))',
+                            transition: 'r 0.15s ease, filter 0.15s ease',
+                          }}
                         />
-                      );
-                    }
-
-                    return null;
+                      </g>
+                    );
                   }}
-                  activeDot={{ r: 6.5, fill: '#4f46e5', stroke: '#ffffff', strokeWidth: 2 }}
+                  activeDot={false}
                 />
 
                 <Line
@@ -419,166 +506,105 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
               </>
             )}
 
-            {/* Track 2: Academic Question Milestones Line / Dots */}
-            {(activeFilterTrack === 'all' || activeFilterTrack === 'academic') && session.questionEvents && (
+            {/* Academic Track: Discrete Question Dots when viewing Academic Track Only */}
+            {activeFilterTrack === 'academic' && session.questionEvents && (
               <Line
                 yAxisId="left"
-                type="stepAfter"
+                type="monotone"
                 dataKey="attentionScore"
-                stroke="transparent"
+                stroke="#38bdf8"
+                strokeWidth={1.5}
+                strokeDasharray="2 2"
                 dot={(props: any) => {
                   const { cx, cy, payload, index } = props;
+                  if (!cx || !cy || !payload) return null;
                   const datum = payload as MarkerDatum;
-                  if (!datum.questionNumber) return null;
+                  if (datum.dotCategory !== 'skyblue') return null;
+
+                  const isHovered = activePointIndex === index;
+                  const isSelected = selectedQuestionIndex && datum.questionNumber === selectedQuestionIndex;
 
                   return (
-                    <g key={`q-${index}`} transform={`translate(${cx - 8}, ${cy - 8})`}>
-                      <rect
-                        width={16}
-                        height={16}
-                        rx={4}
-                        fill={datum.isCorrect ? '#10b981' : '#f43f5e'}
+                    <g
+                      key={`acad-dot-${index}`}
+                      className="cursor-pointer"
+                      onMouseEnter={() => setActivePointIndex(index)}
+                      onMouseLeave={() => setActivePointIndex(null)}
+                      onClick={() => {
+                        if (datum.questionNumber && onSelectQuestion) {
+                          onSelectQuestion(datum.questionNumber);
+                        }
+                      }}
+                    >
+                      {(isHovered || isSelected) && (
+                        <circle cx={cx} cy={cy} r={7.5} fill="rgba(56, 189, 248, 0.45)" className="animate-pulse" />
+                      )}
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={isHovered || isSelected ? 4.2 : 3.3}
+                        fill="#38bdf8"
                         stroke="#ffffff"
-                        strokeWidth={1.5}
+                        strokeWidth={1.2}
                       />
-                      <text
-                        x={8}
-                        y={11}
-                        textAnchor="middle"
-                        fill="#ffffff"
-                        fontSize={8.5}
-                        fontWeight="bold"
-                      >
-                        Q{datum.questionNumber}
-                      </text>
                     </g>
                   );
                 }}
+                activeDot={false}
               />
             )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      {/* ── PHASE 4: EXACT COLOUR-CODED EEG MARKERS LEGEND ───────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1 text-xs">
-        <div className="p-3 rounded-2xl bg-rose-50/70 border border-rose-200 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-rose-500 border border-rose-600 shrink-0" />
-            <span className="font-extrabold text-rose-900">Rose dots: Artifact-Flagged</span>
-          </div>
-          <p className="text-[11px] text-rose-700 leading-tight">
-            Interval contains a detected artifact (blink/motion) and is excluded from aggregate focus metrics.
-          </p>
+      {/* ── 5. COMPACT, CLEAN LEGEND (Tiny Coloured Dots beside Labels) ──────── */}
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pt-2.5 pb-1 border-t border-slate-100 text-[11px] font-semibold text-slate-600">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#fb7185] ring-2 ring-[#fb7185]/30 shadow-2xs" />
+          <span>Rose: Artifact-Flagged</span>
         </div>
-
-        <div className="p-3 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-amber-400 border border-amber-500 shrink-0" />
-            <span className="font-extrabold text-amber-900">Amber dots: Low SQI (&lt;90%)</span>
-          </div>
-          <p className="text-[11px] text-amber-800 leading-tight">
-            Signal quality is below 90%. The attention estimate for this interval is treated as low confidence.
-          </p>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#fbbf24] ring-2 ring-[#fbbf24]/30 shadow-2xs" />
+          <span>Amber: Low SQI (&lt;90%)</span>
         </div>
-
-        <div className="p-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-indigo-600 border border-white shrink-0" />
-            <span className="font-extrabold text-indigo-950">Indigo dots: Adequate Signal</span>
-          </div>
-          <p className="text-[11px] text-indigo-700 leading-tight">
-            Signal quality meets or exceeds 90%. The attention estimate is considered usable for correlation.
-          </p>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#6366f1] ring-2 ring-[#6366f1]/30 shadow-2xs" />
+          <span>Indigo: Usable Attention</span>
         </div>
-
-        <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-slate-300 border border-slate-400 shrink-0" />
-            <span className="font-extrabold text-slate-800">Missing / Unconnected</span>
+        {hasPomodoroEvents && (
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#34d399] ring-2 ring-[#34d399]/30 shadow-2xs" />
+            <span>Mint: Study / Pomodoro Event</span>
           </div>
-          <p className="text-[11px] text-slate-600 leading-tight">
-            Represents gaps where no hardware stream was active. Preserved without fake data substitution.
-          </p>
+        )}
+        {hasAcademicEvents && (
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#38bdf8] ring-2 ring-[#38bdf8]/30 shadow-2xs" />
+            <span>Sky Blue: Test / Assessment</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-[#c084fc] ring-2 ring-[#c084fc]/30 shadow-2xs" />
+          <span>Lavender: Phase Landmark</span>
         </div>
+        {!session.hasEegData && (
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-slate-300 ring-1 ring-slate-400 shadow-2xs" />
+            <span>Slate: Missing / Gap (No EEG)</span>
+          </div>
+        )}
       </div>
 
-      {/* ── PHASE 5: SESSION PHASE ANNOTATIONS BAR ─────────────────────────────── */}
-      <div className="pt-2 border-t border-slate-100 space-y-2">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-          <span className="uppercase tracking-wider text-[10px]">Reference Phase Annotations (Hover for evidence breakdown)</span>
-          <span className="text-[11px] text-slate-400">Synchronized Session Landmarks</span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <div
-            onMouseEnter={() => setActiveAnnotationHover('warmup')}
-            onMouseLeave={() => setActiveAnnotationHover(null)}
-            className={`p-3 rounded-xl border transition-all cursor-pointer ${
-              activeAnnotationHover === 'warmup' ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-800">1. Warmup Phase</span>
-              <span className="text-[10px] text-slate-500">Min 1–5</span>
-            </div>
-            <p className="text-[11px] text-slate-600 mt-0.5">Cognitive baseline calibration window.</p>
-          </div>
-
-          <div
-            onMouseEnter={() => setActiveAnnotationHover('deep')}
-            onMouseLeave={() => setActiveAnnotationHover(null)}
-            className={`p-3 rounded-xl border transition-all cursor-pointer ${
-              activeAnnotationHover === 'deep' ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-indigo-950">2. Deep Engagement</span>
-              <span className="text-[10px] text-indigo-700 font-bold">Min 5–16</span>
-            </div>
-            <p className="text-[11px] text-slate-600 mt-0.5">Peak frontal beta stability window.</p>
-          </div>
-
-          <div
-            onMouseEnter={() => setActiveAnnotationHover('fatigue')}
-            onMouseLeave={() => setActiveAnnotationHover(null)}
-            className={`p-3 rounded-xl border transition-all cursor-pointer ${
-              activeAnnotationHover === 'fatigue' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-500/20' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-amber-900">3. Fatigue Onset</span>
-              <span className="text-[10px] text-amber-700 font-bold">Min 12 Marker</span>
-            </div>
-            <p className="text-[11px] text-amber-800 mt-0.5">Theta power elevation and latency shift.</p>
-          </div>
-
-          <div
-            onMouseEnter={() => setActiveAnnotationHover('blink')}
-            onMouseLeave={() => setActiveAnnotationHover(null)}
-            className={`p-3 rounded-xl border transition-all cursor-pointer ${
-              activeAnnotationHover === 'blink' ? 'bg-rose-50 border-rose-300 ring-2 ring-rose-500/20' : 'bg-slate-50 border-slate-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-rose-950">4. Blink Filtering</span>
-              <span className="text-[10px] text-rose-700 font-bold">Active EOG</span>
-            </div>
-            <p className="text-[11px] text-rose-800 mt-0.5">Automatic EOG artifact quarantine.</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── QUESTION INSPECTOR (When question is selected) ───────────────────── */}
+      {/* ── QUESTION INSPECTOR (Only shown when a question is clicked) ───────── */}
       {selectedQuestionIndex && session.questionEvents && (
-        <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-2 text-xs">
+        <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-2 text-xs">
           {(() => {
             const q = session.questionEvents.find(e => e.questionIndex === selectedQuestionIndex);
             if (!q) return null;
             return (
               <div>
-                <div className="flex items-center justify-between border-b border-indigo-100 pb-2">
-                  <span className="font-black text-indigo-950 text-sm">
+                <div className="flex items-center justify-between border-b border-indigo-100 pb-1.5">
+                  <span className="font-black text-indigo-950 text-xs">
                     Question {q.questionIndex}: {q.topic}
                   </span>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -587,7 +613,7 @@ export const UnifiedSessionGraph: React.FC<UnifiedSessionGraphProps> = ({
                     {q.isCorrect ? '✓ Correct Answer' : '✗ Incorrect Attempt'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-slate-700 text-[11px]">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1.5 text-slate-700 text-[11px]">
                   <div>Time Spent: <strong className="text-slate-900">{q.timeSpentSeconds}s</strong></div>
                   <div>Answer Changes: <strong className="text-slate-900">{q.answerChangeCount}</strong></div>
                   <div>Attention Index: <strong className="text-indigo-900">{q.avgAttentionScore || 80}%</strong></div>
