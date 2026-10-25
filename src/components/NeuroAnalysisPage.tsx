@@ -12,6 +12,8 @@ import {
 import type { UserProfile, LearningSession, FocusTimePoint } from '../types';
 import { getStudentSessions, getWeeklyNeuralProgress, isDemoUser, saveStudentSession } from '../utils/neuroSessionStore';
 import { eegService, type EEGDeviceStatus } from '../services/eegService';
+import { eegModeController, type ActiveEEGMode } from '../services/eegModeController';
+import { SimulationDashboard } from './SimulationDashboard';
 
 interface NeuroAnalysisPageProps {
   user: UserProfile;
@@ -31,6 +33,7 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
   onNavigateToHardwareRig,
 }) => {
   const isDemo = isDemoUser(user.id, user.email);
+  const [operatingMode, setOperatingMode] = useState<ActiveEEGMode>(eegModeController.getMode());
   const [sessions, setSessions] = useState<LearningSession[]>(() => getStudentSessions(user.id));
   const weeklyReport = useMemo(() => getWeeklyNeuralProgress(user.id), [user.id, sessions]);
 
@@ -50,6 +53,11 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
     });
     return () => unsub();
   }, [isLiveRecording]);
+
+  const handleSwitchMode = (newMode: ActiveEEGMode) => {
+    setOperatingMode(newMode);
+    eegModeController.setMode(newMode);
+  };
 
   // Selected session state
   const [selectedSessionId, setSelectedSessionId] = useState<string>(() => {
@@ -293,6 +301,72 @@ export const NeuroAnalysisPage: React.FC<NeuroAnalysisPageProps> = ({
           </div>
         </div>
       </div>
+
+            {/* ── TWO CLEARLY SEPARATED OPERATING MODES: LIVE HARDWARE vs DEMO SIMULATION ── */}
+      <div className="bg-white rounded-3xl border border-slate-200 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold ${
+            operatingMode === 'live-hardware' ? 'bg-amber-50 text-amber-600' : 'bg-purple-50 text-purple-600'
+          }`}>
+            <Radio className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              EEG Operating Pipeline Mode
+            </div>
+            <div className="text-sm font-black text-slate-900 flex items-center gap-2">
+              <span>{operatingMode === 'live-hardware' ? 'Live EEG Hardware Mode (Arduino + BioAmp)' : 'Demo / Simulation Mode (Synthetic Signal Engine)'}</span>
+              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                operatingMode === 'live-hardware'
+                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-purple-50 text-purple-800 border-purple-200'
+              }`}>
+                {operatingMode === 'live-hardware' ? 'Zero Synthetic Data' : 'SIMULATED DATA — NOT REAL EEG'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl">
+          <button
+            onClick={() => handleSwitchMode('live-hardware')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              operatingMode === 'live-hardware'
+                ? 'bg-white text-indigo-950 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500 fill-current" />
+            <span>Live Hardware Mode</span>
+          </button>
+
+          <button
+            onClick={() => handleSwitchMode('demo-simulation')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+              operatingMode === 'demo-simulation'
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Launch Demo Mode</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Render Simulation Dashboard when in demo-simulation mode */}
+      {operatingMode === 'demo-simulation' && (
+        <SimulationDashboard
+          user={user}
+          onNavigateToNeuroAnalysis={(sessId) => {
+            if (sessId) {
+              setSessions(getStudentSessions(user.id));
+              setSelectedSessionId(sessId);
+            }
+          }}
+          onOpenTimer={onStartStudySession}
+        />
+      )}
 
       {/* ── HARDWARE ACCESS CONTROL & 6-STATE CONNECTION PANEL ────────────────── */}
       <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs space-y-5">

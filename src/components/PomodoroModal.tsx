@@ -27,16 +27,18 @@ export const PomodoroModal: React.FC<PomodoroModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'pomodoro' | 'countdown' | 'stopwatch'>('pomodoro');
 
+  const isDemo = user ? isDemoUser(user.id, user.email) : false;
+
   // EEG Hardware & Recording State
   const [eegStatus, setEegStatus] = useState<EEGDeviceStatus>(eegService.getStatus());
-  const [recordEeg, setRecordEeg] = useState<boolean>(false);
-  const [recordDuringBreaks, setRecordDuringBreaks] = useState<boolean>(false);
-  const [recentSignalPoints, setRecentSignalPoints] = useState<number[]>([]);
-  const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
-
-  const isDemo = user ? isDemoUser(user.id, user.email) : false;
   const isHardwareStreaming = eegStatus.state === 'streaming' && eegStatus.samplesReceived > 0;
   const canRecordEeg = isHardwareStreaming || isDemo;
+
+  const [recordEeg, setRecordEeg] = useState<boolean>(false);
+  const [recordDuringBreaks, setRecordDuringBreaks] = useState<boolean>(false);
+  const [eegSourceMode, setEegSourceMode] = useState<'hardware' | 'demo'>(isDemo ? 'demo' : 'hardware');
+  const [recentSignalPoints, setRecentSignalPoints] = useState<number[]>([]);
+  const [completedSessionId, setCompletedSessionId] = useState<string | null>(null);
 
   // Custom durations for Pomodoro (minutes)
   const [focusDurationMinutes, setFocusDurationMinutes] = useState<number>(25);
@@ -307,7 +309,7 @@ export const PomodoroModal: React.FC<PomodoroModalProps> = ({
   const beginEEGRecordingIfEnabled = (mode: 'pomodoro' | 'study') => {
     if (!recordEeg || !user) return;
 
-    if (!canRecordEeg && !isDemo) {
+    if (eegSourceMode === 'hardware' && !canRecordEeg) {
       // Hardware disconnected: Do NOT start fake EEG for real users!
       return;
     }
@@ -446,7 +448,8 @@ export const PomodoroModal: React.FC<PomodoroModalProps> = ({
 
     let sessionToSave: LearningSession;
 
-    if (recordEeg && (canRecordEeg || isDemo)) {
+    const isSim = eegSourceMode === 'demo' || isDemo;
+    if (recordEeg && (canRecordEeg || isSim)) {
       if (eegService.isRecordingActive()) {
         eegService.setCustomPhases(phasesRef.current);
         const liveSess = eegService.stopRecording();
@@ -878,8 +881,52 @@ export const PomodoroModal: React.FC<PomodoroModalProps> = ({
                   </div>
                 )}
 
+                {/* EEG Source Mode Selector */}
+                <div className="pt-2 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">EEG Source:</span>
+                    <div className="flex bg-slate-200/70 p-0.5 rounded-lg text-[11px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setEegSourceMode('hardware')}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          eegSourceMode === 'hardware'
+                            ? 'bg-white text-indigo-900 shadow-2xs font-extrabold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Live Hardware
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEegSourceMode('demo');
+                          setRecordEeg(true);
+                        }}
+                        className={`px-2.5 py-1 rounded-md transition-all ${
+                          eegSourceMode === 'demo'
+                            ? 'bg-purple-600 text-white shadow-2xs font-extrabold'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Demo Mode (Simulated)
+                      </button>
+                    </div>
+                  </div>
+
+                  {eegSourceMode === 'demo' ? (
+                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                      SIMULATED DATA — NOT REAL EEG
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {isHardwareStreaming ? 'Hardware Stream Active' : 'Offline / Hardware Disconnected'}
+                    </span>
+                  )}
+                </div>
+
                 {/* EEG Toggles */}
-                <div className="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="pt-1.5 flex flex-wrap items-center justify-between gap-3 text-xs">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
