@@ -1,0 +1,12 @@
+{
+  "name": "campus-qa-website",
+  "version": "1.0.0",
+  "description": "Comprehensive, bug-free, fully responsive Campus Q&A Web Application",
+  "main": "server.py",
+  "scripts": {
+    "start": "python server.py"
+  },
+  "keywords": ["campus", "qa", "university", "college", "discussion-forum"],
+  "author": "Google Antigravity Pair Programmer",
+  "license": "MIT"
+}
