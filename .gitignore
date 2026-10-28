@@ -1,11 +1,19 @@
+# Node & Build artifacts
+node_modules/
+dist/
+dist-ssr/
+*.local
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.sqlite3-journal
 
-# Environment & IDE
+# Environment & Editor
 .env
+.env.*
+!.env.example
 .vscode/
 .idea/
 .DS_Store
