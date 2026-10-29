@@ -172,6 +172,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
     'Senior Mentor': 'bg-indigo-600 text-white',
     'Faculty Mentor': 'bg-emerald-600 text-white',
     'Administrator': 'bg-purple-600 text-white',
+    'Parent/Guardian': 'bg-[#00AFC1] text-white',
   };
 
   const updateEmail = (role: UserRole) => {
@@ -181,6 +182,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
       'Senior Mentor': 'rachel.torres@apex.edu',
       'Faculty Mentor': 'a.thorne@apex.edu',
       'Administrator': 'v.miller@apex.edu',
+      'Parent/Guardian': 'eleanor.vance@guardian.apex.edu',
     };
     setEmail(defaults[role]);
     setErrorMessage(null);
@@ -219,6 +221,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
             <button onClick={() => handleQuickLogin('mentor_rachel')} className="px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold hover:bg-indigo-100 transition-colors">🤝 Senior Mentor</button>
             <button onClick={() => handleQuickLogin('faculty_thorne')} className="px-3 py-1.5 rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-bold hover:bg-teal-100 transition-colors">🏛️ Faculty</button>
             <button onClick={() => handleQuickLogin('admin_dean')} className="px-3 py-1.5 rounded-lg bg-slate-100 border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors">🛡️ Admin</button>
+            <button onClick={() => handleQuickLogin('guardian_eleanor')} className="px-3 py-1.5 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800 text-xs font-bold hover:bg-cyan-100 transition-colors">👨‍👧 Parent/Guardian</button>
           </div>
         </div>
       </div>
@@ -269,7 +272,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wider">Select Campus Role</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {(['Student', 'Senior Mentor', 'Faculty Mentor', 'Administrator'] as UserRole[]).map((role) => (
+                    {(['Student', 'Senior Mentor', 'Faculty Mentor', 'Administrator', 'Parent/Guardian'] as UserRole[]).map((role) => (
                       <button
                         key={role}
                         type="button"
@@ -371,7 +374,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                     Campus Role
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {(['Student', 'Senior Mentor', 'Faculty Mentor', 'Administrator'] as UserRole[]).map((role) => (
+                    {(['Student', 'Senior Mentor', 'Faculty Mentor', 'Administrator', 'Parent/Guardian'] as UserRole[]).map((role) => (
                       <button
                         key={role}
                         type="button"

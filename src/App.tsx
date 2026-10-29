@@ -25,7 +25,9 @@ import { TestsPage } from './components/TestsPage';
 import { NeuroAnalysisPage } from './components/NeuroAnalysisPage';
 import { BioAmpHardwareModal } from './components/BioAmpHardwareModal';
 import { HardwareDashboard } from './components/HardwareDashboard';
-import { SMART_REMINDERS, INITIAL_MESSAGES } from './mockData';
+import { LandingPage } from './components/LandingPage';
+import { ParentGuardianPortal } from './components/ParentGuardianPortal';
+import { SMART_REMINDERS, INITIAL_MESSAGES, PRESET_USERS } from './mockData';
 import { isDemoUser, resetDemoData } from './utils/neuroSessionStore';
 import type { UserProfile, AppPage } from './types';
 
@@ -34,6 +36,7 @@ type ModalType = 'mockTest' | 'aiClassroom' | 'revision' | 'practice' | 'pomodor
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [currentPage, setCurrentPage] = useState<AppPage>('dashboard');
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [openModal, setOpenModal] = useState<ModalType>(null);
   const [revisionTopic, setRevisionTopic] = useState('');
   const [practiceTopic, setPracticeTopic] = useState('');
@@ -101,9 +104,29 @@ export default function App() {
   const openPractice = (topic: string) => { setPracticeTopic(topic); setOpenModal('practice'); };
   const closeModal = () => setOpenModal(null);
 
-  // ── AUTH ──────────────────────────────────────────────────────────────────
+  // ── AUTH & LANDING ───────────────────────────────────────────────────────
   if (!currentUser) {
-    return <AuthPage onLoginSuccess={handleLogin} />;
+    if (showAuthModal) {
+      return (
+        <div className="relative min-h-screen bg-[#F3F6FF]">
+          <div className="max-w-md mx-auto pt-6 px-4">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-[#E1E7F2] text-[#17213B] shadow-sm hover:bg-[#F3F6FF] transition-all"
+            >
+              ← Back to Platform Overview
+            </button>
+          </div>
+          <AuthPage onLoginSuccess={handleLogin} />
+        </div>
+      );
+    }
+    return (
+      <LandingPage
+        onEnterDashboard={(user) => handleLogin(user || PRESET_USERS.demo_student)}
+        onOpenAuth={() => setShowAuthModal(true)}
+      />
+    );
   }
 
   // ── ROLE-BASED VIEWS ──────────────────────────────────────────────────────
@@ -115,6 +138,8 @@ export default function App() {
         return <FacultyView user={currentUser} />;
       case 'Administrator':
         return <AdminView user={currentUser} />;
+      case 'Parent/Guardian':
+        return <ParentGuardianPortal user={currentUser} onNavigateDashboard={() => setCurrentPage('dashboard')} />;
       default:
         return renderStudentDashboard();
     }
@@ -122,6 +147,18 @@ export default function App() {
 
   const renderPageContent = () => {
     switch (currentPage) {
+      case 'landing':
+        return (
+          <LandingPage
+            onEnterDashboard={() => setCurrentPage('dashboard')}
+            onOpenAuth={() => {
+              handleLogout();
+              setShowAuthModal(true);
+            }}
+          />
+        );
+      case 'parent-portal':
+        return <ParentGuardianPortal user={currentUser} onNavigateDashboard={() => setCurrentPage('dashboard')} />;
       case 'courses':
         return <CoursesPage user={currentUser} onSelectCourse={(c) => setSelectedCourse(c)} />;
       case 'tests':

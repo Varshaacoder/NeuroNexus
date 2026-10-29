@@ -168,6 +168,22 @@ export const PRESET_USERS: Record<string, UserProfile> = {
     topicMasteryData: [],
     dailyStudyHours: [],
     rankScore: 0,
+  },
+  guardian_eleanor: {
+    id: 'guardian_eleanor',
+    name: 'Eleanor Rivera',
+    email: 'eleanor.rivera@guardian.edu',
+    role: 'Parent/Guardian',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+    institution: 'Apex Institute of Science & Technology',
+    department: 'Authorized Guardian of: Alex Rivera',
+    semester: 'Active Guardian Consent',
+    enrolledCourses: ['CS201', 'CS202'],
+    isFirstTime: false,
+    weeklyProgressHistory: [],
+    topicMasteryData: [],
+    dailyStudyHours: [],
+    rankScore: 0,
   }
 };
 

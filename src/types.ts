@@ -1,4 +1,4 @@
-export type UserRole = 'Student' | 'Senior Mentor' | 'Faculty Mentor' | 'Administrator';
+export type UserRole = 'Student' | 'Senior Mentor' | 'Faculty Mentor' | 'Administrator' | 'Parent/Guardian';
 
 export type LearnerRank = 'Bronze Scholar' | 'Silver Rising' | 'Gold Learner' | 'Platinum Master';
 
@@ -77,6 +77,7 @@ export interface DiagnosticQuestion {
 }
 
 export type AppPage =
+  | 'landing'
   | 'dashboard'
   | 'courses'
   | 'tests'
@@ -86,7 +87,9 @@ export type AppPage =
   | 'leaderboard'
   | 'messages'
   | 'profile'
-  | 'ai-classroom';
+  | 'ai-classroom'
+  | 'parent-portal'
+  | 'wellbeing';
 
 export interface NeuralMetrics {
   avgFocus: number;

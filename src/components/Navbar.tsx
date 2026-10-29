@@ -40,16 +40,18 @@ interface NavItemDef {
 
 // ── PRIMARY NAVIGATION (Always directly accessible on desktop) ──────────────
 const PRIMARY_NAV: NavItemDef[] = [
+  { label: 'Home', page: 'landing', icon: Compass, description: 'Product landing page and platform overview', accent: 'text-[#2855D9]' },
   { label: 'Dashboard', page: 'dashboard', icon: Home, description: 'Personal study overview and analytics' },
   { label: 'Courses', page: 'courses', icon: BookOpen, description: 'Academic curriculum and course modules' },
   { label: 'Tests', page: 'tests', icon: FileCheck2, description: 'Diagnostic mock tests and benchmarks' },
-  { label: 'Neuro Analysis', page: 'neuro-analysis', icon: Brain, description: 'Cognitive workload and focus dynamics', accent: 'text-indigo-600' },
+  { label: 'Neuro Analysis', page: 'neuro-analysis', icon: Brain, description: 'Cognitive workload and focus dynamics', accent: 'text-[#00AFC1]' },
 ];
 
 // ── SECONDARY NAVIGATION (Seamlessly available via 'More' on standard screens) ──
 const SECONDARY_NAV: NavItemDef[] = [
-  { label: 'Hardware Rig', page: 'hardware-integration', icon: Cpu, description: 'Live EEG signal stream and hardware adapter', accent: 'text-cyan-600' },
-  { label: 'AI Classroom', page: 'ai-classroom', icon: Bot, description: 'Interactive Socratic tutor and whiteboard', accent: 'text-violet-600' },
+  { label: 'Parent Portal', page: 'parent-portal', icon: ShieldCheck, description: 'Authorized student summary and family support', accent: 'text-[#059669]' },
+  { label: 'Hardware Rig', page: 'hardware-integration', icon: Cpu, description: 'Live EEG signal stream and hardware adapter', accent: 'text-[#00AFC1]' },
+  { label: 'AI Classroom', page: 'ai-classroom', icon: Bot, description: 'Interactive Socratic tutor and whiteboard', accent: 'text-[#8755E8]' },
   { label: 'Community', page: 'community', icon: Users, description: 'Peer Q&A, faculty announcements and notes', accent: 'text-emerald-600' },
   { label: 'Leaderboard', page: 'leaderboard', icon: Trophy, description: 'Academic ranks, XP, and badges', accent: 'text-amber-600' },
   { label: 'Messages', page: 'messages', icon: MessageSquare, description: 'Faculty and mentor direct messaging', accent: 'text-blue-600' },
