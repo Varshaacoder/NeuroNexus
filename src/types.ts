@@ -89,7 +89,8 @@ export type AppPage =
   | 'profile'
   | 'ai-classroom'
   | 'parent-portal'
-  | 'wellbeing';
+  | 'wellbeing'
+  | 'faculty';
 
 export interface NeuralMetrics {
   avgFocus: number;

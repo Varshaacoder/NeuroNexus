@@ -33,11 +33,38 @@ class NeuronexusApp {
     // 3. Initialize Live EEG Loop (Light-theme canvas)
     this.initLiveEEGWaveform();
 
-    // 4. Default View Navigation
-    this.navigate("landing");
+    // 4. Browser History & View Controller
+    window.addEventListener("popstate", (e) => {
+      const view = (e.state && e.state.view) || this.getViewFromPath(window.location.pathname) || "landing";
+      this.navigate(view, false);
+    });
+
+    const initialView = this.getViewFromPath(window.location.pathname) || "landing";
+    this.navigate(initialView, false);
+    const targetUrl = initialView === "landing" ? "/" : `/${initialView}`;
+    if (window.location.pathname !== targetUrl) {
+      window.history.replaceState({ view: initialView }, "", targetUrl);
+    }
 
     // Replace icons
     if (window.feather) feather.replace();
+  }
+
+  getViewFromPath(pathname) {
+    const clean = (pathname || "").toLowerCase().trim().replace(/\/+$/, "");
+    if (!clean || clean === "/" || clean === "/landing" || clean === "/home") return "landing";
+    if (clean === "/dashboard") return "dashboard";
+    if (clean === "/courses" || clean === "/lessons") return "courses";
+    if (clean === "/neuro" || clean === "/neuro-analysis" || clean === "/eeg") return "neuro";
+    if (clean === "/ai-insights") return "ai-insights";
+    if (clean === "/wellbeing" || clean === "/wellness") return "wellbeing";
+    if (clean === "/parent" || clean === "/parent-portal") return "parent";
+    if (clean === "/faculty") return "faculty";
+    if (clean === "/privacy") return "privacy";
+    if (clean === "/qa" || clean === "/community") return "qa";
+    if (clean.startsWith("/lesson")) return "lesson";
+    if (clean.startsWith("/quiz")) return "quiz";
+    return "landing";
   }
 
   // =========================================================================
@@ -127,11 +154,15 @@ class NeuronexusApp {
     }
   }
 
-  // =========================================================================
-  // NAVIGATION & VIEW CONTROLLER
-  // =========================================================================
-  navigate(viewName) {
+  navigate(viewName, pushHistory = true) {
     this.currentView = viewName;
+
+    if (pushHistory) {
+      const targetUrl = viewName === "landing" ? "/" : `/${viewName}`;
+      if (window.location.pathname !== targetUrl) {
+        window.history.pushState({ view: viewName }, "", targetUrl);
+      }
+    }
 
     // Hide all view sections
     document.querySelectorAll(".view-section").forEach(sec => sec.classList.add("hidden"));

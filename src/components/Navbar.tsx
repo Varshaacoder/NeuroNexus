@@ -3,7 +3,7 @@ import {
   GraduationCap, Bell, Sparkles, LogOut, Search, ChevronDown,
   ShieldCheck, Flame, Clock, BookOpen, Users, MessageSquare,
   Trophy, Home, Menu, X, User, ChevronRight, Bot, Brain, FileCheck2, Cpu,
-  Compass, MoreHorizontal, Check
+  Compass, MoreHorizontal, Check, Heart
 } from 'lucide-react';
 import type { UserProfile, UserRole, AppPage } from '../types';
 import { PRESET_USERS, AVAILABLE_COURSES, COMMUNITY_POSTS, RANK_LEADERBOARD } from '../mockData';
@@ -50,6 +50,7 @@ const PRIMARY_NAV: NavItemDef[] = [
 // ── SECONDARY NAVIGATION (Seamlessly available via 'More' on standard screens) ──
 const SECONDARY_NAV: NavItemDef[] = [
   { label: 'Parent Portal', page: 'parent-portal', icon: ShieldCheck, description: 'Authorized student summary and family support', accent: 'text-[#059669]' },
+  { label: 'Student Wellbeing', page: 'wellbeing', icon: Heart, description: 'Cognitive rest rituals and voluntary family check-in', accent: 'text-[#8755E8]' },
   { label: 'Hardware Rig', page: 'hardware-integration', icon: Cpu, description: 'Live EEG signal stream and hardware adapter', accent: 'text-[#00AFC1]' },
   { label: 'AI Classroom', page: 'ai-classroom', icon: Bot, description: 'Interactive Socratic tutor and whiteboard', accent: 'text-[#8755E8]' },
   { label: 'Community', page: 'community', icon: Users, description: 'Peer Q&A, faculty announcements and notes', accent: 'text-emerald-600' },

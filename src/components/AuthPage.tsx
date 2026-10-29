@@ -8,12 +8,32 @@ import { PRESET_USERS } from '../mockData';
 
 interface AuthPageProps {
   onLoginSuccess: (user: UserProfile) => void;
+  initialMode?: 'login' | 'register';
+  onNavigateHome?: () => void;
+  onModeChange?: (mode: 'login' | 'register') => void;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+export const AuthPage: React.FC<AuthPageProps> = ({
+  onLoginSuccess,
+  initialMode = 'login',
+  onNavigateHome,
+  onModeChange,
+}) => {
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [selectedRole, setSelectedRole] = useState<UserRole>('Student');
   const [authMethod, setAuthMethod] = useState<'password' | 'otp' | 'sso'>('password');
+
+  React.useEffect(() => {
+    if (initialMode && initialMode !== mode) {
+      setMode(initialMode);
+    }
+  }, [initialMode]);
+
+  const handleTabChange = (newMode: 'login' | 'register') => {
+    setMode(newMode);
+    setErrorMessage(null);
+    onModeChange?.(newMode);
+  };
   
   // Login fields
   const [email, setEmail] = useState('demo.student@apex.edu');
@@ -245,7 +265,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
             {/* Mode Switcher Tabs */}
             <div className="flex bg-white/10 p-1 rounded-xl mt-4 border border-white/20">
               <button
-                onClick={() => { setMode('login'); setErrorMessage(null); }}
+                type="button"
+                onClick={() => handleTabChange('login')}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   mode === 'login' ? 'bg-white text-indigo-900 shadow-sm' : 'text-indigo-200 hover:text-white'
                 }`}
@@ -253,7 +274,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
                 Sign In
               </button>
               <button
-                onClick={() => { setMode('register'); setErrorMessage(null); }}
+                type="button"
+                onClick={() => handleTabChange('register')}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
                   mode === 'register' ? 'bg-amber-400 text-slate-900 shadow-sm' : 'text-indigo-200 hover:text-white'
                 }`}
