@@ -228,14 +228,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLoginSuccess }) => {
         <div className="w-full max-w-md">
           
           {/* Card Header */}
-          <div className="bg-gradient-to-br from-indigo-700 to-slate-900 rounded-t-3xl p-7 text-white text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-4">
-              <Brain className="w-8 h-8 text-amber-300" />
+          <div className="bg-gradient-to-br from-[#2855D9] via-[#6842D0] to-[#8755E8] rounded-t-3xl p-7 text-white text-center shadow-lg">
+            <div className="w-14 h-14 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center mx-auto mb-4 backdrop-blur-xs">
+              <Brain className="w-8 h-8 text-[#00AFC1]" />
             </div>
             <h1 className="text-2xl font-black text-white tracking-tight">
-              Neuro<span className="text-amber-400">Nexus</span>
+              Neuro<span className="text-[#00AFC1]">Nexus</span>
             </h1>
-            <p className="text-sm text-indigo-200 mt-1.5">
+            <p className="text-sm text-blue-100 mt-1.5 font-medium">
               AI Academic Collaboration & NeuroFocus Platform
             </p>
 

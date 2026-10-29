@@ -1,5 +1,5 @@
 /**
- * NEURONEXUS CLIENT APPLICATION CORE
+ * NEURONEXUS CLIENT APPLICATION CORE — LIGHT THEME
  * Complete Single-Page Application Logic & Waveform Animation Engine
  * Team: Infinite Loopers (Team ID: DEX26031)
  */
@@ -27,10 +27,10 @@ class NeuronexusApp {
     // 1. Check or establish default session as Student (Alex Rivera)
     await this.restoreOrDemoLogin("student");
 
-    // 2. Start Hero Waveform Animation
+    // 2. Start Hero Waveform Animation (Light-theme canvas)
     this.initHeroWaveform();
 
-    // 3. Initialize Live EEG Loop
+    // 3. Initialize Live EEG Loop (Light-theme canvas)
     this.initLiveEEGWaveform();
 
     // 4. Default View Navigation
@@ -97,9 +97,9 @@ class NeuronexusApp {
     if (nameEl) nameEl.textContent = user.name;
     if (roleEl) {
       roleEl.textContent = user.role.toUpperCase();
-      roleEl.className = `text-[10px] font-semibold uppercase ${
-        user.role === 'faculty' ? 'text-indigo-400' :
-        user.role === 'parent' ? 'text-emerald-400' : 'text-cyan-400'
+      roleEl.className = `text-[10px] font-bold uppercase tracking-wider ${
+        user.role === 'faculty' ? 'text-[#8755E8]' :
+        user.role === 'parent' ? 'text-[#059669]' : 'text-[#2855D9]'
       }`;
     }
     if (avatarEl && user.avatar_url) avatarEl.src = user.avatar_url;
@@ -138,8 +138,8 @@ class NeuronexusApp {
 
     // Deactivate nav links
     document.querySelectorAll(".nav-link").forEach(btn => {
-      btn.classList.remove("bg-slate-800", "text-white", "font-bold");
-      btn.classList.add("text-slate-300");
+      btn.classList.remove("bg-[#EEF3FF]", "text-[#2855D9]", "font-bold");
+      btn.classList.add("text-[#64708A]");
     });
 
     // Show target section
@@ -149,11 +149,11 @@ class NeuronexusApp {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    // Highlight active nav link
+    // Highlight active nav link with Light-Theme royal blue pill
     const activeBtn = document.querySelector(`.nav-link[data-view="${viewName}"]`);
     if (activeBtn) {
-      activeBtn.classList.add("bg-slate-800", "text-white", "font-bold");
-      activeBtn.classList.remove("text-slate-300");
+      activeBtn.classList.add("bg-[#EEF3FF]", "text-[#2855D9]", "font-bold");
+      activeBtn.classList.remove("text-[#64708A]");
     }
 
     // Load dynamic data for view
@@ -222,8 +222,10 @@ class NeuronexusApp {
         // Step 7: Student Wellbeing Check-in & Share
         this.navigate("wellbeing");
         this.selectMood("Feeling stressed");
-        document.getElementById("wellbeingNotesInput").value = "Balancing CS201 midterms and CS301 recursion labs this week.";
-        document.getElementById("wellbeingShareGuardianCheck").checked = true;
+        const notesEl = document.getElementById("wellbeingNotesInput");
+        if (notesEl) notesEl.value = "Balancing CS201 midterms and CS301 recursion labs this week.";
+        const shareEl = document.getElementById("wellbeingShareGuardianCheck");
+        if (shareEl) shareEl.checked = true;
         this.showToast("Step 7: Voluntary student wellbeing check-in. Pre-filled with sharing permission.");
         break;
 
@@ -251,7 +253,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // ANIMATED EEG WAVEFORM ENGINES (CANVAS)
+  // ANIMATED EEG WAVEFORM ENGINES (LIGHT THEME CANVAS)
   // =========================================================================
   initHeroWaveform() {
     const canvas = document.getElementById("heroWaveCanvas");
@@ -264,19 +266,20 @@ class NeuronexusApp {
       const width = canvas.width;
       const height = canvas.height;
 
-      // Draw 3 flowing biopotential traces (Alpha 10Hz, Beta 18Hz, Theta 6Hz)
+      // Draw 3 flowing biopotential traces in Light Theme:
+      // Neural Cyan (#00AFC1), AI Violet (#8755E8), Royal Blue (#2855D9)
       const traces = [
-        { color: "rgba(6, 182, 212, 0.85)", yMid: height * 0.28, freq: 0.04, amp: 22, speed: 0.05 },
-        { color: "rgba(139, 92, 246, 0.85)", yMid: height * 0.52, freq: 0.07, amp: 18, speed: 0.07 },
-        { color: "rgba(56, 189, 248, 0.75)", yMid: height * 0.76, freq: 0.025, amp: 20, speed: 0.04 }
+        { color: "rgba(0, 175, 193, 0.92)", yMid: height * 0.28, freq: 0.04, amp: 22, speed: 0.05 },
+        { color: "rgba(135, 85, 232, 0.90)", yMid: height * 0.52, freq: 0.07, amp: 18, speed: 0.07 },
+        { color: "rgba(40, 85, 217, 0.88)", yMid: height * 0.76, freq: 0.025, amp: 20, speed: 0.04 }
       ];
 
       traces.forEach(t => {
         ctx.beginPath();
-        ctx.lineWidth = 2.2;
+        ctx.lineWidth = 2.4;
         ctx.strokeStyle = t.color;
         ctx.shadowColor = t.color;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 6;
 
         for (let x = 0; x < width; x += 3) {
           const y = t.yMid + 
@@ -318,21 +321,23 @@ class NeuronexusApp {
         const w = canvas.width;
         const h = canvas.height;
         const channels = ["Fp1", "Fp2", "Cz", "Pz"];
-        const colors = ["#06b6d4", "#38bdf8", "#818cf8", "#a78bfa"];
+        // Distinct Light Theme Colors: Neural Cyan, Royal Blue, AI Violet, Purple
+        const colors = ["#00AFC1", "#2855D9", "#8755E8", "#6366F1"];
         const channelHeight = h / channels.length;
 
         channels.forEach((ch, idx) => {
           const yCenter = (idx + 0.5) * channelHeight;
           const data = this.liveDataBuffer[ch] || [];
 
-          // Channel baseline and label
-          ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+          // Channel baseline grid line in subtle light slate
+          ctx.strokeStyle = "rgba(225, 231, 242, 0.9)";
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(0, yCenter);
           ctx.lineTo(w, yCenter);
           ctx.stroke();
 
+          // Channel label
           ctx.fillStyle = colors[idx];
           ctx.font = "bold 11px sans-serif";
           ctx.fillText(`${ch} (±500µV)`, 10, yCenter - 14);
@@ -340,10 +345,10 @@ class NeuronexusApp {
           // Draw signal waveform
           if (data.length > 1) {
             ctx.beginPath();
-            ctx.lineWidth = 1.8;
+            ctx.lineWidth = 2.0;
             ctx.strokeStyle = colors[idx];
             ctx.shadowColor = colors[idx];
-            ctx.shadowBlur = 6;
+            ctx.shadowBlur = 4;
 
             const stepX = w / Math.max(1, data.length - 1);
             for (let i = 0; i < data.length; i++) {
@@ -398,29 +403,29 @@ class NeuronexusApp {
 
     if (qualityPill) {
       qualityPill.textContent = data.signal_quality || "Good";
-      qualityPill.className = `px-2 py-0.5 rounded text-[11px] font-bold ${
-        data.signal_quality === "Good" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
-        data.signal_quality === "Poor" ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" :
-        "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+      qualityPill.className = `px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+        data.signal_quality === "Good" ? "bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]" :
+        data.signal_quality === "Poor" ? "bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]" :
+        "bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]"
       }`;
     }
 
     if (covPct) covPct.textContent = `${data.valid_coverage_pct || 0}%`;
     if (covBar) {
       covBar.style.width = `${data.valid_coverage_pct || 0}%`;
-      covBar.className = data.valid_coverage_pct > 70 ? "bg-emerald-500 h-2 rounded-full" : "bg-amber-500 h-2 rounded-full";
+      covBar.className = data.valid_coverage_pct > 70 ? "bg-[#059669] h-2 rounded-full" : "bg-[#D97706] h-2 rounded-full";
     }
 
     if (artifactStatus) {
       if (data.scenario === "noisy") {
         artifactStatus.textContent = "High EMG / Clipping Detected";
-        artifactStatus.className = "font-bold text-amber-400";
+        artifactStatus.className = "font-bold text-[#D97706]";
       } else if (data.scenario === "disconnected") {
         artifactStatus.textContent = "No Signal / Flatline";
-        artifactStatus.className = "font-bold text-rose-400";
+        artifactStatus.className = "font-bold text-[#DC2626]";
       } else {
         artifactStatus.textContent = "Normal Baseline (<5%)";
-        artifactStatus.className = "font-bold text-emerald-400";
+        artifactStatus.className = "font-bold text-[#059669]";
       }
     }
 
@@ -440,14 +445,14 @@ class NeuronexusApp {
   switchEEGScenario(scenario) {
     this.eegScenario = scenario;
 
-    // Update scenario button styles
+    // Update scenario button styles in Light Theme
     ["good", "noisy", "disconnected"].forEach(s => {
       const btn = document.getElementById(`btnScenario${s === 'good' ? 'Good' : s === 'noisy' ? 'Noisy' : 'Disc'}`);
       if (btn) {
         if (s === scenario) {
-          btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-600 text-white border border-cyan-400 shadow-sm transition-all";
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-[#2855D9] text-white shadow-xs transition-all";
         } else {
-          btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 text-slate-300 hover:text-white border border-slate-700 transition-all";
+          btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-[#64708A] hover:text-[#17213B] border border-[#E1E7F2] transition-all";
         }
       }
     });
@@ -463,7 +468,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: STUDENT DASHBOARD
+  // VIEW: STUDENT DASHBOARD (LIGHT THEME)
   // =========================================================================
   async loadDashboard() {
     try {
@@ -473,22 +478,22 @@ class NeuronexusApp {
       const cContainer = document.getElementById("dashboardCoursesList");
       if (cContainer && Array.isArray(courses)) {
         cContainer.innerHTML = courses.map(c => `
-          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="p-4 rounded-2xl bg-white border border-[#E1E7F2] shadow-2xs hover:shadow-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="space-y-1">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">${c.code}</span>
-                <h4 class="font-bold text-white text-sm">${c.title}</h4>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF]">${c.code}</span>
+                <h4 class="font-bold text-[#17213B] text-sm">${c.title}</h4>
               </div>
-              <p class="text-xs text-slate-400">${c.description}</p>
+              <p class="text-xs text-[#64708A]">${c.description}</p>
             </div>
             <div class="flex items-center gap-4 shrink-0">
               <div class="text-right">
-                <div class="text-xs font-bold text-slate-200">${c.progress_pct}% Completed</div>
-                <div class="w-24 bg-slate-800 h-1.5 rounded-full mt-1 overflow-hidden">
-                  <div class="bg-cyan-500 h-1.5 rounded-full" style="width: ${c.progress_pct}%"></div>
+                <div class="text-xs font-bold text-[#17213B]">${c.progress_pct}% Completed</div>
+                <div class="w-24 bg-[#EEF3FF] h-1.5 rounded-full mt-1 overflow-hidden">
+                  <div class="bg-[#2855D9] h-1.5 rounded-full" style="width: ${c.progress_pct}%"></div>
                 </div>
               </div>
-              <button onclick="app.openCourse(${c.id})" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
+              <button onclick="app.openCourse(${c.id})" class="px-3.5 py-1.5 rounded-xl bg-[#2855D9] hover:bg-[#1E44B5] text-white font-bold text-xs shadow-2xs transition-all">
                 Continue &rarr;
               </button>
             </div>
@@ -504,13 +509,13 @@ class NeuronexusApp {
         mContainer.innerHTML = mastery.map(m => `
           <div>
             <div class="flex items-center justify-between text-xs font-semibold mb-1">
-              <span class="text-slate-200">${m.topic}</span>
-              <span class="${m.mastery_pct >= 70 ? 'text-emerald-400' : 'text-amber-400'}">${m.mastery_pct}%</span>
+              <span class="text-[#17213B]">${m.topic}</span>
+              <span class="font-bold ${m.mastery_pct >= 70 ? 'text-[#059669]' : 'text-[#D97706]'}">${m.mastery_pct}%</span>
             </div>
-            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div class="${m.mastery_pct >= 70 ? 'bg-emerald-500' : 'bg-amber-500'} h-2 rounded-full" style="width: ${m.mastery_pct}%"></div>
+            <div class="w-full bg-[#EEF3FF] h-2 rounded-full overflow-hidden">
+              <div class="${m.mastery_pct >= 70 ? 'bg-[#059669]' : 'bg-[#D97706]'} h-2 rounded-full" style="width: ${m.mastery_pct}%"></div>
             </div>
-            <div class="text-[10px] text-slate-400 mt-1">${m.questions_correct}/${m.questions_attempted} verified answers • ${m.course_code}</div>
+            <div class="text-[10px] text-[#64708A] mt-1">${m.questions_correct}/${m.questions_attempted} verified answers • ${m.course_code}</div>
           </div>
         `).join("");
       }
@@ -521,19 +526,19 @@ class NeuronexusApp {
       const rContainer = document.getElementById("dashboardRecommendationsList");
       if (rContainer && Array.isArray(recs)) {
         rContainer.innerHTML = recs.slice(0, 3).map(r => `
-          <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 flex flex-col justify-between">
-            <div class="space-y-1.5">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.category === 'academic' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'}">
+          <div class="p-5 rounded-2xl bg-white border border-[#E1E7F2] shadow-2xs hover:shadow-xs transition-all space-y-3 flex flex-col justify-between">
+            <div class="space-y-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.category === 'academic' ? 'bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF]' : 'bg-[#F6F0FF] text-[#8755E8] border border-[#E8DCFD]'}">
                 ${r.category === 'academic' ? 'Academic Evidence' : 'Neuro Context'}
               </span>
-              <h4 class="font-bold text-slate-100 text-xs">${r.title}</h4>
-              <p class="text-slate-400 text-xs line-clamp-3">${r.recommendation_text}</p>
+              <h4 class="font-bold text-[#17213B] text-xs">${r.title}</h4>
+              <p class="text-[#64708A] text-xs line-clamp-3 leading-relaxed">${r.recommendation_text}</p>
             </div>
-            <div class="pt-2 flex items-center justify-between border-t border-slate-800/80 text-[11px]">
-              <button onclick="app.openEvidenceModal(${r.id})" class="text-cyan-400 hover:underline font-semibold">
+            <div class="pt-2 flex items-center justify-between border-t border-[#E1E7F2] text-[11px]">
+              <button onclick="app.openEvidenceModal(${r.id})" class="text-[#2855D9] hover:underline font-bold">
                 Why am I seeing this?
               </button>
-              <button onclick="app.executeRecAction('${r.action_route}')" class="text-slate-300 hover:text-white font-bold">
+              <button onclick="app.executeRecAction('${r.action_route}')" class="text-[#2855D9] hover:text-[#1E44B5] font-bold">
                 ${r.action_label} &rarr;
               </button>
             </div>
@@ -547,7 +552,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: COURSES & EMBEDDED YOUTUBE LESSONS
+  // VIEW: COURSES & EMBEDDED YOUTUBE LESSONS (LIGHT THEME)
   // =========================================================================
   async loadCourses() {
     try {
@@ -557,21 +562,21 @@ class NeuronexusApp {
       if (!grid || !Array.isArray(courses)) return;
 
       grid.innerHTML = courses.map(c => `
-        <div class="glass-panel overflow-hidden flex flex-col justify-between border-slate-700/60">
-          <div class="h-44 w-full relative overflow-hidden bg-slate-900">
-            <img src="${c.thumbnail_url}" alt="${c.title}" class="w-full h-full object-cover opacity-80 hover:scale-105 transition-transform duration-300">
-            <div class="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-black/60 backdrop-blur-sm text-cyan-400 text-xs font-bold border border-cyan-500/30">
+        <div class="glass-panel overflow-hidden flex flex-col justify-between bg-white border border-[#E1E7F2] rounded-2xl shadow-xs hover:shadow-md transition-all">
+          <div class="h-48 w-full relative overflow-hidden bg-[#F3F6FF]">
+            <img src="${c.thumbnail_url}" alt="${c.title}" class="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-300">
+            <div class="absolute top-3 left-3 px-3 py-1 rounded-md bg-white/95 text-[#2855D9] text-xs font-bold border border-[#E1E7F2] shadow-xs">
               ${c.code} • ${c.level}
             </div>
           </div>
           <div class="p-6 space-y-4 flex-1 flex flex-col justify-between">
             <div class="space-y-2">
-              <h3 class="text-xl font-bold text-white">${c.title}</h3>
-              <p class="text-slate-400 text-xs leading-relaxed">${c.description}</p>
+              <h3 class="text-xl font-bold text-[#17213B]">${c.title}</h3>
+              <p class="text-[#64708A] text-xs leading-relaxed">${c.description}</p>
             </div>
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
-              <span class="text-xs text-slate-400">Instructor: <strong class="text-slate-200">${c.instructor_name}</strong></span>
-              <button onclick="app.openCourse(${c.id})" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs uppercase tracking-wider">
+            <div class="pt-4 border-t border-[#E1E7F2] flex items-center justify-between">
+              <span class="text-xs text-[#64708A]">Instructor: <strong class="text-[#17213B]">${c.instructor_name}</strong></span>
+              <button onclick="app.openCourse(${c.id})" class="px-4 py-2 rounded-xl bg-[#2855D9] hover:bg-[#1E44B5] text-white font-bold text-xs uppercase tracking-wider transition-all">
                 Open Syllabus &rarr;
               </button>
             </div>
@@ -585,7 +590,6 @@ class NeuronexusApp {
   }
 
   async openCourse(courseId) {
-    // Open Lesson 1 for Course 1 or Lesson 3 for Course 2
     if (courseId === 1) this.currentLessonId = 1;
     else this.currentLessonId = 3;
     this.navigate("lesson");
@@ -619,11 +623,11 @@ class NeuronexusApp {
       const compBtn = document.getElementById("lessonCompleteBtn");
       if (compBtn) {
         if (lesson.is_completed) {
-          compBtn.innerHTML = `<i data-feather="check-circle" class="w-4 h-4 text-emerald-400"></i> Completed`;
-          compBtn.className = "px-4 py-2 rounded-xl bg-emerald-950/60 text-emerald-300 border border-emerald-800 text-xs font-bold flex items-center gap-2";
+          compBtn.innerHTML = `<i data-feather="check-circle" class="w-4 h-4 text-[#059669]"></i> Completed`;
+          compBtn.className = "px-4 py-2 rounded-xl bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-xs font-bold flex items-center gap-2";
         } else {
-          compBtn.innerHTML = `<i data-feather="check" class="w-4 h-4 text-slate-400"></i> Mark Lesson Completed`;
-          compBtn.className = "px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-2";
+          compBtn.innerHTML = `<i data-feather="check" class="w-4 h-4 text-[#64708A]"></i> Mark Lesson Completed`;
+          compBtn.className = "px-4 py-2 rounded-xl bg-[#F3F6FF] hover:bg-[#EEF3FF] text-[#17213B] border border-[#E1E7F2] text-xs font-bold flex items-center gap-2 transition-all";
         }
       }
 
@@ -654,7 +658,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: PRACTICE QUIZZES & TOPIC MASTERY
+  // VIEW: PRACTICE QUIZZES & TOPIC MASTERY (LIGHT THEME)
   // =========================================================================
   async loadQuiz(quizId) {
     try {
@@ -671,21 +675,21 @@ class NeuronexusApp {
 
       if (container && Array.isArray(quiz.questions)) {
         container.innerHTML = quiz.questions.map((q, idx) => `
-          <div class="glass-panel p-6 space-y-4">
+          <div class="glass-panel p-6 space-y-4 bg-white rounded-2xl border border-[#E1E7F2] shadow-xs">
             <div class="flex items-start justify-between gap-3">
-              <h4 class="font-bold text-white text-sm">
-                <span class="text-cyan-400 mr-2">Question ${idx + 1}.</span>
+              <h4 class="font-bold text-[#17213B] text-sm">
+                <span class="text-[#2855D9] mr-2">Question ${idx + 1}.</span>
                 ${q.question_text}
               </h4>
-              <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-400 shrink-0">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF] shrink-0">
                 ${q.topic}
               </span>
             </div>
 
             <div class="space-y-2.5">
               ${q.options.map((opt, oIdx) => `
-                <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 hover:bg-slate-800/80 border border-slate-800 cursor-pointer text-xs text-slate-300 transition-colors">
-                  <input type="radio" name="quiz_q_${q.id}" value="${oIdx}" onchange="app.recordQuizAnswer(${q.id}, ${oIdx})" class="w-4 h-4 text-cyan-500 bg-slate-900 border-slate-700">
+                <label class="flex items-center gap-3 p-3.5 rounded-xl bg-white hover:bg-[#EEF3FF]/70 border border-[#E1E7F2] cursor-pointer text-xs text-[#17213B] font-medium transition-colors shadow-2xs">
+                  <input type="radio" name="quiz_q_${q.id}" value="${oIdx}" onchange="app.recordQuizAnswer(${q.id}, ${oIdx})" class="w-4 h-4 text-[#2855D9] focus:ring-[#2855D9]">
                   <span>${opt}</span>
                 </label>
               `).join("")}
@@ -728,13 +732,13 @@ class NeuronexusApp {
       const reviewContainer = document.getElementById("quizReviewContainer");
       if (reviewContainer && Array.isArray(data.results)) {
         reviewContainer.innerHTML = data.results.map((r, i) => `
-          <div class="p-4 rounded-xl ${r.is_correct ? 'bg-emerald-950/20 border border-emerald-800/40' : 'bg-rose-950/20 border border-rose-800/40'} space-y-2 text-xs">
+          <div class="p-4 rounded-xl ${r.is_correct ? 'bg-[#ECFDF5] border border-[#A7F3D0]' : 'bg-[#FEF2F2] border border-[#FECACA]'} space-y-2 text-xs">
             <div class="flex items-center justify-between font-bold">
-              <span class="text-slate-200">Q${i + 1}: ${r.question_text}</span>
-              <span class="${r.is_correct ? 'text-emerald-400' : 'text-rose-400'}">${r.is_correct ? 'Correct (+1)' : 'Incorrect (0)'}</span>
+              <span class="text-[#17213B]">Q${i + 1}: ${r.question_text}</span>
+              <span class="${r.is_correct ? 'text-[#059669]' : 'text-[#DC2626]'} font-black">${r.is_correct ? 'Correct (+1)' : 'Incorrect (0)'}</span>
             </div>
-            <div class="text-slate-400 text-[11px] leading-relaxed">
-              <strong class="text-slate-300">Explanation:</strong> ${r.explanation}
+            <div class="text-[#64708A] text-[11px] leading-relaxed">
+              <strong class="text-[#17213B]">Explanation:</strong> ${r.explanation}
             </div>
           </div>
         `).join("");
@@ -749,7 +753,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: NEURO ANALYSIS STUDIO
+  // VIEW: NEURO ANALYSIS STUDIO (LIGHT THEME)
   // =========================================================================
   async loadNeuroStudio() {
     try {
@@ -758,19 +762,19 @@ class NeuronexusApp {
       const sContainer = document.getElementById("neuroSessionsList");
       if (sContainer && Array.isArray(sessions)) {
         sContainer.innerHTML = sessions.map(s => `
-          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div class="p-4 rounded-xl bg-white border border-[#E1E7F2] shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div class="space-y-1">
               <div class="flex items-center gap-2">
-                <span class="font-bold text-white">${s.session_title}</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.signal_quality === 'Good' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">
+                <span class="font-bold text-[#17213B]">${s.session_title}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${s.signal_quality === 'Good' ? 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]' : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]'}">
                   ${s.signal_quality} Quality (${s.valid_data_coverage_pct}%)
                 </span>
               </div>
-              <p class="text-slate-400">Duration: ${Math.round(s.duration_seconds / 60)} minutes • Channels: ${s.channel_names}</p>
+              <p class="text-[#64708A]">Duration: ${Math.round(s.duration_seconds / 60)} minutes • Channels: ${s.channel_names}</p>
             </div>
             <div class="text-right">
-              <div class="text-slate-300 font-semibold">${s.estimate_suppressed ? '<span class="text-amber-400">Estimate Suppressed</span>' : 'Focus: <span class="text-cyan-400 font-bold">' + s.avg_focus_index + '%</span>'}</div>
-              <div class="text-[10px] text-slate-400">${new Date(s.created_at).toLocaleDateString()}</div>
+              <div class="font-bold">${s.estimate_suppressed ? '<span class="text-[#D97706]">Estimate Suppressed</span>' : 'Focus: <span class="text-[#00AFC1] font-black">' + s.avg_focus_index + '%</span>'}</div>
+              <div class="text-[10px] text-[#8E9BB0]">${new Date(s.created_at).toLocaleDateString()}</div>
             </div>
           </div>
         `).join("");
@@ -781,7 +785,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: EXPLAINABLE AI INSIGHTS
+  // VIEW: EXPLAINABLE AI INSIGHTS (LIGHT THEME)
   // =========================================================================
   async loadAIInsights() {
     try {
@@ -790,29 +794,29 @@ class NeuronexusApp {
       const container = document.getElementById("aiInsightsFullList");
       if (container && Array.isArray(recs)) {
         container.innerHTML = recs.map(r => `
-          <div class="glass-panel p-6 space-y-4 flex flex-col justify-between">
+          <div class="glass-panel p-6 space-y-4 flex flex-col justify-between bg-white rounded-2xl border border-[#E1E7F2] shadow-xs hover:shadow-md transition-all">
             <div class="space-y-2.5">
               <div class="flex items-center justify-between">
-                <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
-                  r.category === 'academic' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
-                  'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  r.category === 'academic' ? 'bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF]' :
+                  'bg-[#F6F0FF] text-[#8755E8] border border-[#E8DCFD]'
                 }">
                   ${r.category === 'academic' ? 'Academic Evidence (Primary)' : 'Neuro Context (Optional)'}
                 </span>
               </div>
-              <h4 class="font-bold text-white text-base">${r.title}</h4>
-              <p class="text-slate-300 text-xs leading-relaxed">${r.recommendation_text}</p>
+              <h4 class="font-bold text-[#17213B] text-base">${r.title}</h4>
+              <p class="text-[#64708A] text-xs leading-relaxed">${r.recommendation_text}</p>
             </div>
 
-            <div class="pt-4 border-t border-slate-800 space-y-3">
-              <div class="p-3 rounded-lg bg-slate-900 text-[11px] text-slate-400">
-                <strong class="text-slate-200">Basis:</strong> ${r.evidence_reason}
+            <div class="pt-4 border-t border-[#E1E7F2] space-y-3">
+              <div class="p-3 rounded-xl bg-[#F3F6FF] border border-[#E1E7F2] text-[11px] text-[#64708A]">
+                <strong class="text-[#17213B]">Basis:</strong> ${r.evidence_reason}
               </div>
               <div class="flex items-center justify-between pt-1">
-                <button onclick="app.openEvidenceModal(${r.id})" class="text-cyan-400 hover:underline text-xs font-semibold">
+                <button onclick="app.openEvidenceModal(${r.id})" class="text-[#8755E8] hover:underline text-xs font-bold">
                   Why am I seeing this?
                 </button>
-                <button onclick="app.executeRecAction('${r.action_route}')" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold">
+                <button onclick="app.executeRecAction('${r.action_route}')" class="px-3.5 py-1.5 rounded-xl bg-[#2855D9] hover:bg-[#1E44B5] text-white text-xs font-bold shadow-2xs transition-all">
                   ${r.action_label} &rarr;
                 </button>
               </div>
@@ -834,32 +838,32 @@ class NeuronexusApp {
 
       if (body) {
         body.innerHTML = `
-          <div class="p-3.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-cyan-300 space-y-1">
-            <div class="font-bold text-sm text-white">${data.title}</div>
-            <div class="text-[11px]">${data.reasoning_summary}</div>
+          <div class="p-4 rounded-2xl bg-[#F6F0FF] border border-[#E8DCFD] text-[#8755E8] space-y-1">
+            <div class="font-bold text-sm text-[#17213B]">${data.title}</div>
+            <div class="text-[11px] text-[#64708A]">${data.reasoning_summary}</div>
           </div>
 
           <div class="space-y-2">
-            <div class="font-bold text-slate-200 uppercase text-[10px] tracking-wider">Algorithm & Verification</div>
-            <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
-              <div><strong class="text-slate-300">Engine:</strong> ${data.algorithm}</div>
-              <div><strong class="text-slate-300">Confidence:</strong> High (Empirical quiz response telemetry)</div>
+            <div class="font-bold text-[#17213B] uppercase text-[10px] tracking-wider">Algorithm & Verification</div>
+            <div class="p-3.5 rounded-xl bg-[#F3F6FF] border border-[#E1E7F2] space-y-1 text-xs">
+              <div><strong class="text-[#17213B]">Engine:</strong> ${data.algorithm}</div>
+              <div class="text-[#64708A]"><strong class="text-[#17213B]">Confidence:</strong> High (Empirical quiz response telemetry)</div>
             </div>
           </div>
 
           ${data.quiz_attempt ? `
             <div class="space-y-2">
-              <div class="font-bold text-slate-200 uppercase text-[10px] tracking-wider">Supporting Assessment Record</div>
-              <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1 text-slate-300">
-                <div>Quiz: <strong class="text-white">${data.quiz_attempt.quiz_title}</strong></div>
-                <div>Submitted Score: <strong class="text-cyan-400">${data.quiz_attempt.score} / ${data.quiz_attempt.total_questions} (${data.quiz_attempt.percentage}%)</strong></div>
-                <div class="text-[10px] text-slate-400">Timestamp: ${new Date(data.quiz_attempt.completed_at).toLocaleString()}</div>
+              <div class="font-bold text-[#17213B] uppercase text-[10px] tracking-wider">Supporting Assessment Record</div>
+              <div class="p-3.5 rounded-xl bg-[#F3F6FF] border border-[#E1E7F2] space-y-1 text-xs text-[#17213B]">
+                <div>Quiz: <strong class="text-[#17213B]">${data.quiz_attempt.quiz_title}</strong></div>
+                <div>Submitted Score: <strong class="text-[#2855D9]">${data.quiz_attempt.score} / ${data.quiz_attempt.total_questions} (${data.quiz_attempt.percentage}%)</strong></div>
+                <div class="text-[10px] text-[#64708A]">Timestamp: ${new Date(data.quiz_attempt.completed_at).toLocaleString()}</div>
               </div>
             </div>
           ` : ''}
 
-          <div class="text-[11px] text-slate-400 leading-relaxed border-t border-slate-800 pt-3">
-            <strong class="text-slate-300">Privacy & Transparency Notice:</strong> ${data.disclaimer}
+          <div class="text-[11px] text-[#64708A] leading-relaxed border-t border-[#E1E7F2] pt-3">
+            <strong class="text-[#17213B]">Privacy & Transparency Notice:</strong> ${data.disclaimer}
           </div>
         `;
       }
@@ -887,7 +891,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: STUDENT WELLBEING & FAMILY SUPPORT (SHARING CONTROLS)
+  // VIEW: STUDENT WELLBEING & FAMILY SUPPORT (LIGHT THEME)
   // =========================================================================
   async loadWellbeingCheckins() {
     try {
@@ -896,30 +900,30 @@ class NeuronexusApp {
       const container = document.getElementById("studentWellbeingCheckinsList");
       if (container && Array.isArray(checkins)) {
         if (checkins.length === 0) {
-          container.innerHTML = `<div class="text-slate-400 text-xs py-4">No check-ins recorded yet. Fill out the voluntary form above!</div>`;
+          container.innerHTML = `<div class="text-[#64708A] text-xs py-4">No check-ins recorded yet. Fill out the voluntary form above!</div>`;
           return;
         }
 
         container.innerHTML = checkins.map(c => `
-          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+          <div class="p-4 rounded-xl bg-white border border-[#E1E7F2] shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
             <div class="space-y-1.5">
               <div class="flex items-center gap-2">
-                <span class="font-bold text-white text-sm">${c.status_mood}</span>
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.is_shared_with_guardian ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
+                <span class="font-bold text-[#17213B] text-sm">${c.status_mood}</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.is_shared_with_guardian ? 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]' : 'bg-[#F3F6FF] text-[#64708A] border border-[#E1E7F2]'}">
                   ${c.is_shared_with_guardian ? 'Shared with Guardian (' + (c.guardian_name || 'Eleanor Rivera') + ')' : 'Private (Student Only)'}
                 </span>
               </div>
-              <p class="text-slate-300 italic">"${c.notes || 'No private notes attached'}"</p>
-              <div class="text-[10px] text-slate-400">Recorded: ${new Date(c.created_at).toLocaleString()}</div>
+              <p class="text-[#64708A] italic">"${c.notes || 'No private notes attached'}"</p>
+              <div class="text-[10px] text-[#8E9BB0]">Recorded: ${new Date(c.created_at).toLocaleString()}</div>
             </div>
 
             <div class="shrink-0 flex items-center gap-2">
               ${c.is_shared_with_guardian ? `
-                <button onclick="app.revokeCheckinSharing(${c.id})" class="px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800 font-bold text-xs">
+                <button onclick="app.revokeCheckinSharing(${c.id})" class="px-3 py-1.5 rounded-lg bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] font-bold text-xs transition-all">
                   Revoke Sharing
                 </button>
               ` : `
-                <button onclick="app.shareCheckinWithGuardian(${c.id})" class="px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 font-bold text-xs">
+                <button onclick="app.shareCheckinWithGuardian(${c.id})" class="px-3 py-1.5 rounded-lg bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] font-bold text-xs transition-all">
                   Share with Guardian
                 </button>
               `}
@@ -936,9 +940,11 @@ class NeuronexusApp {
     this.selectedMood = mood;
     document.querySelectorAll(".mood-btn").forEach(btn => {
       if (btn.textContent.includes(mood)) {
-        btn.classList.add("bg-cyan-950", "border-cyan-500", "text-cyan-300");
+        btn.classList.add("bg-[#EEF3FF]", "border-[#2855D9]", "text-[#2855D9]");
+        btn.classList.remove("bg-white", "border-[#E1E7F2]", "text-[#17213B]");
       } else {
-        btn.classList.remove("bg-cyan-950", "border-cyan-500", "text-cyan-300");
+        btn.classList.remove("bg-[#EEF3FF]", "border-[#2855D9]", "text-[#2855D9]");
+        btn.classList.add("bg-white", "border-[#E1E7F2]", "text-[#17213B]");
       }
     });
   }
@@ -999,7 +1005,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: PARENT / GUARDIAN PORTAL
+  // VIEW: PARENT / GUARDIAN PORTAL (LIGHT THEME)
   // =========================================================================
   async loadParentPortalData() {
     try {
@@ -1015,13 +1021,13 @@ class NeuronexusApp {
       const acadContainer = document.getElementById("parentAcademicSummaryList");
       if (acadContainer && Array.isArray(data.academic_summary)) {
         acadContainer.innerHTML = data.academic_summary.map(a => `
-          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+          <div class="p-5 rounded-2xl bg-white border border-[#E1E7F2] shadow-2xs space-y-2 text-xs">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-white">${a.topic}</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400">${a.code}</span>
+              <span class="font-bold text-[#17213B] text-sm">${a.topic}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF]">${a.code}</span>
             </div>
-            <div class="text-2xl font-black ${a.mastery_pct >= 70 ? 'text-emerald-400' : 'text-amber-400'}">${a.mastery_pct}%</div>
-            <div class="text-slate-400 text-[11px]">${a.questions_correct}/${a.questions_attempted} verified answers</div>
+            <div class="text-3xl font-black ${a.mastery_pct >= 70 ? 'text-[#059669]' : 'text-[#D97706]'}">${a.mastery_pct}%</div>
+            <div class="text-[#64708A] text-[11px]">${a.questions_correct}/${a.questions_attempted} verified answers</div>
           </div>
         `).join("");
       }
@@ -1031,22 +1037,22 @@ class NeuronexusApp {
       if (wellContainer) {
         if (!data.shared_wellbeing_checkins || data.shared_wellbeing_checkins.length === 0) {
           wellContainer.innerHTML = `
-            <div class="p-6 rounded-xl bg-slate-900/40 border border-slate-800 text-center text-xs text-slate-400 space-y-1">
-              <div class="font-semibold text-slate-300">No shared wellbeing records currently authorized.</div>
+            <div class="p-6 rounded-2xl bg-[#F3F6FF] border border-[#E1E7F2] text-center text-xs text-[#64708A] space-y-1">
+              <div class="font-bold text-[#17213B]">No shared wellbeing records currently authorized.</div>
               <div>The student has not authorized any check-in for guardian view, or previous sharing was revoked.</div>
             </div>
           `;
         } else {
           wellContainer.innerHTML = data.shared_wellbeing_checkins.map(c => `
-            <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+            <div class="p-4 rounded-xl bg-white border border-[#E1E7F2] shadow-2xs space-y-2 text-xs">
               <div class="flex items-center justify-between">
-                <span class="font-bold text-white text-sm flex items-center gap-2">
+                <span class="font-bold text-[#17213B] text-sm flex items-center gap-2">
                   <span>${c.status_mood}</span>
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">Explicitly Shared</span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]">Explicitly Shared</span>
                 </span>
-                <span class="text-slate-400 text-[10px]">Shared: ${new Date(c.shared_at).toLocaleDateString()}</span>
+                <span class="text-[#8E9BB0] text-[10px]">Shared: ${new Date(c.shared_at).toLocaleDateString()}</span>
               </div>
-              <p class="text-slate-300 italic">"${c.notes}"</p>
+              <p class="text-[#64708A] italic">"${c.notes}"</p>
             </div>
           `).join("");
         }
@@ -1058,7 +1064,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: FACULTY ANALYTICS
+  // VIEW: FACULTY ANALYTICS (LIGHT THEME)
   // =========================================================================
   async loadFacultyAnalytics() {
     try {
@@ -1070,10 +1076,10 @@ class NeuronexusApp {
         concContainer.innerHTML = data.frequently_missed_concepts.map(c => `
           <div class="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <div class="font-bold text-slate-200">${c.concept}</div>
-              <div class="text-slate-400 text-[11px] mt-0.5">${c.recommended_action}</div>
+              <div class="font-bold text-[#17213B]">${c.concept}</div>
+              <div class="text-[#64708A] text-[11px] mt-0.5">${c.recommended_action}</div>
             </div>
-            <div class="shrink-0 font-bold text-rose-400 text-sm">
+            <div class="shrink-0 font-bold text-[#DC2626] text-sm">
               ${c.error_rate} Miss Rate
             </div>
           </div>
@@ -1086,7 +1092,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: PRIVACY & CONSENT CENTER
+  // VIEW: PRIVACY & CONSENT CENTER (LIGHT THEME)
   // =========================================================================
   async loadPrivacySettings() {
     try {
@@ -1095,13 +1101,13 @@ class NeuronexusApp {
       const container = document.getElementById("privacyAuditLogsList");
       if (container && Array.isArray(logs)) {
         container.innerHTML = logs.map(l => `
-          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+          <div class="p-3 rounded-xl bg-white border border-[#E1E7F2] shadow-2xs flex items-center justify-between text-xs">
             <div>
-              <span class="font-bold text-cyan-400">${l.action}</span>
-              <span class="text-slate-300 mx-1">•</span>
-              <span class="text-slate-400">${l.details}</span>
+              <span class="font-bold text-[#2855D9]">${l.action}</span>
+              <span class="text-[#CBD5E1] mx-1">•</span>
+              <span class="text-[#64708A]">${l.details}</span>
             </div>
-            <span class="text-slate-400 text-[10px] shrink-0">${new Date(l.created_at).toLocaleTimeString()}</span>
+            <span class="text-[#8E9BB0] text-[10px] shrink-0">${new Date(l.created_at).toLocaleTimeString()}</span>
           </div>
         `).join("");
       }
@@ -1141,7 +1147,7 @@ class NeuronexusApp {
   }
 
   // =========================================================================
-  // VIEW: PRESERVED CAMPUS Q&A
+  // VIEW: CAMPUS Q&A (LIGHT THEME)
   // =========================================================================
   async loadCampusQA() {
     try {
@@ -1150,21 +1156,21 @@ class NeuronexusApp {
       const qList = document.getElementById("qaQuestionsList");
       if (qList && Array.isArray(questions)) {
         qList.innerHTML = questions.map(q => `
-          <div class="glass-panel p-5 space-y-3">
+          <div class="glass-panel p-6 space-y-3 bg-white rounded-2xl border border-[#E1E7F2] shadow-xs">
             <div class="flex items-center justify-between text-xs">
-              <span class="px-2 py-0.5 rounded font-bold" style="background: ${q.category_color}20; color: ${q.category_color}">
+              <span class="px-2.5 py-0.5 rounded-full font-bold" style="background: ${q.category_color}15; color: ${q.category_color}">
                 ${q.category_name}
               </span>
-              <span class="text-slate-400">Asked by ${q.author_name}</span>
+              <span class="text-[#8E9BB0]">Asked by ${q.author_name}</span>
             </div>
-            <h3 class="font-bold text-white text-base">${q.title}</h3>
-            <p class="text-slate-300 text-xs line-clamp-2">${q.body}</p>
-            <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400">
+            <h3 class="font-bold text-[#17213B] text-base">${q.title}</h3>
+            <p class="text-[#64708A] text-xs line-clamp-2 leading-relaxed">${q.body}</p>
+            <div class="flex items-center justify-between pt-2 border-t border-[#E1E7F2] text-xs text-[#64708A]">
               <div class="flex items-center gap-4">
                 <span>${q.votes_count} Votes</span>
                 <span>${q.answers_count} Answers</span>
               </div>
-              <button onclick="app.showToast('Thread viewed')" class="text-cyan-400 hover:underline font-semibold">
+              <button onclick="app.showToast('Thread viewed')" class="text-[#2855D9] hover:underline font-bold">
                 View Discussion &rarr;
               </button>
             </div>
@@ -1178,15 +1184,15 @@ class NeuronexusApp {
       const mList = document.getElementById("qaMentorsList");
       if (mList && Array.isArray(mentors)) {
         mList.innerHTML = mentors.map(m => `
-          <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 text-xs">
-            <div class="flex items-center justify-between font-bold text-white">
+          <div class="p-3.5 rounded-xl bg-white border border-[#E1E7F2] shadow-2xs space-y-1.5 text-xs">
+            <div class="flex items-center justify-between font-bold text-[#17213B]">
               <span>${m.name}</span>
-              <span class="text-amber-400">★ ${m.rating}</span>
+              <span class="text-[#D97706]">★ ${m.rating}</span>
             </div>
-            <div class="text-[11px] text-slate-400">${m.specialties}</div>
+            <div class="text-[11px] text-[#64708A]">${m.specialties}</div>
             <div class="flex items-center justify-between pt-1">
-              <span class="text-[10px] text-emerald-400">${m.availability}</span>
-              <button onclick="app.showToast('Mentoring request sent to ' + '${m.name}')" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-[10px] font-bold">
+              <span class="text-[10px] text-[#059669] font-bold">${m.availability}</span>
+              <button onclick="app.showToast('Mentoring request sent to ' + '${m.name}')" class="px-2.5 py-1 rounded-lg bg-[#EEF3FF] hover:bg-[#D5E2FF] text-[#2855D9] text-[10px] font-bold">
                 Request Chat
               </button>
             </div>
@@ -1199,8 +1205,23 @@ class NeuronexusApp {
     }
   }
 
+  searchQuestions(query) {
+    const qList = document.getElementById("qaQuestionsList");
+    if (!qList) return;
+    const cards = qList.querySelectorAll(".glass-panel");
+    const term = (query || "").toLowerCase();
+    cards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      card.style.display = text.includes(term) ? "block" : "none";
+    });
+  }
+
+  openAskQuestionModal() {
+    this.showToast("Ask Question form opened — Share your topic with campus mentors!");
+  }
+
   // =========================================================================
-  // HARDWARE SETUP MODAL
+  // HARDWARE SETUP MODAL (LIGHT THEME)
   // =========================================================================
   async openHardwareModal() {
     try {
@@ -1211,23 +1232,23 @@ class NeuronexusApp {
 
       if (body) {
         body.innerHTML = `
-          <div class="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-800/40 space-y-1">
-            <div class="font-bold text-white text-sm">${data.config.device_name}</div>
-            <div class="text-cyan-400 text-[11px] font-semibold">${data.label}</div>
+          <div class="p-4 rounded-2xl bg-[#E6F9FC] border border-[#B4EFF5] space-y-1">
+            <div class="font-bold text-[#17213B] text-sm">${data.config.device_name}</div>
+            <div class="text-[#00AFC1] text-[11px] font-bold">${data.label}</div>
           </div>
 
-          <div class="space-y-2 p-3 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
-            <div class="flex justify-between"><span>Connection Interface:</span><strong class="text-white">${data.port}</strong></div>
-            <div class="flex justify-between"><span>Baud Rate:</span><strong class="text-white">${data.baudrate} bps</strong></div>
-            <div class="flex justify-between"><span>Sampling Rate:</span><strong class="text-white">${data.config.sampling_rate_hz} Hz</strong></div>
-            <div class="flex justify-between"><span>Channels Supported:</span><strong class="text-cyan-400">${data.config.channels.join(", ")}</strong></div>
-            <div class="flex justify-between"><span>Mains Notch Filter:</span><strong class="text-white">${data.config.mains_notch_freq_hz} Hz</strong></div>
-            <div class="flex justify-between"><span>Bandpass Limits:</span><strong class="text-white">${data.config.bandpass_low_hz} - ${data.config.bandpass_high_hz} Hz</strong></div>
-            <div class="flex justify-between"><span>Packet Drop Ratio:</span><strong class="text-emerald-400">${data.packet_drop_rate}%</strong></div>
+          <div class="space-y-2 p-3.5 rounded-xl bg-[#F3F6FF] border border-[#E1E7F2] text-[#17213B] text-xs">
+            <div class="flex justify-between"><span>Connection Interface:</span><strong class="text-[#17213B]">${data.port}</strong></div>
+            <div class="flex justify-between"><span>Baud Rate:</span><strong class="text-[#17213B]">${data.baudrate} bps</strong></div>
+            <div class="flex justify-between"><span>Sampling Rate:</span><strong class="text-[#17213B]">${data.config.sampling_rate_hz} Hz</strong></div>
+            <div class="flex justify-between"><span>Channels Supported:</span><strong class="text-[#00AFC1] font-bold">${data.config.channels.join(", ")}</strong></div>
+            <div class="flex justify-between"><span>Mains Notch Filter:</span><strong class="text-[#17213B]">${data.config.mains_notch_freq_hz} Hz</strong></div>
+            <div class="flex justify-between"><span>Bandpass Limits:</span><strong class="text-[#17213B]">${data.config.bandpass_low_hz} - ${data.config.bandpass_high_hz} Hz</strong></div>
+            <div class="flex justify-between"><span>Packet Drop Ratio:</span><strong class="text-[#059669] font-bold">${data.packet_drop_rate}%</strong></div>
           </div>
 
-          <div class="p-3 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-            <strong class="text-slate-200">Microcontroller Bridge Ready:</strong>
+          <div class="p-3.5 rounded-xl bg-white border border-[#E1E7F2] text-[11px] text-[#64708A] leading-relaxed">
+            <strong class="text-[#17213B]">Microcontroller Bridge Ready:</strong>
             Connect BioAmp EXG Pill analog OUT to ESP32 ADC pin 34 (GPIO34). Flash the standard 250Hz serial stream sketch to stream live biopotentials.
           </div>
         `;
@@ -1250,15 +1271,15 @@ class NeuronexusApp {
   renderSimpleMarkdown(text) {
     if (!text) return "";
     let html = text
-      .replace(/^### (.*$)/gim, '<h4 class="text-sm font-bold text-white mt-4 mb-1">$1</h4>')
-      .replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-cyan-400 mt-5 mb-2">$1</h3>')
-      .replace(/^# (.*$)/gim, '<h2 class="text-lg font-black text-white mt-6 mb-3">$1</h2>')
-      .replace(/\*\*(.*?)\*\*/gim, '<strong class="text-slate-100">$1</strong>')
+      .replace(/^### (.*$)/gim, '<h4 class="text-sm font-bold text-[#17213B] mt-4 mb-1">$1</h4>')
+      .replace(/^## (.*$)/gim, '<h3 class="text-base font-bold text-[#2855D9] mt-5 mb-2">$1</h3>')
+      .replace(/^# (.*$)/gim, '<h2 class="text-lg font-black text-[#17213B] mt-6 mb-3">$1</h2>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="text-[#17213B] font-bold">$1</strong>')
       .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-      .replace(/```java([\s\S]*?)```/gim, '<pre class="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-cyan-300 text-xs overflow-x-auto my-3"><code>$1</code></pre>')
-      .replace(/`([^`]+)`/gim, '<code class="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono text-[11px]">$1</code>')
+      .replace(/```java([\s\S]*?)```/gim, '<pre class="p-4 rounded-xl bg-[#F8FAFC] border border-[#E1E7F2] font-mono text-[#00AFC1] text-xs overflow-x-auto my-3 shadow-2xs"><code>$1</code></pre>')
+      .replace(/`([^`]+)`/gim, '<code class="px-1.5 py-0.5 rounded bg-[#EEF3FF] text-[#2855D9] font-mono text-[11px] font-semibold">$1</code>')
       .replace(/\n\n/gim, '<p class="mb-3">')
-      .replace(/^\- (.*$)/gim, '<li class="ml-4 list-disc text-slate-300">$1</li>');
+      .replace(/^\- (.*$)/gim, '<li class="ml-4 list-disc text-[#64708A]">$1</li>');
     return html;
   }
 
@@ -1267,17 +1288,17 @@ class NeuronexusApp {
     if (!toast) {
       toast = document.createElement("div");
       toast.id = "appToast";
-      toast.className = "fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none flex items-center gap-2";
+      toast.className = "fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-xl text-xs font-bold transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none flex items-center gap-2";
       document.body.appendChild(toast);
     }
 
     if (type === "error") {
-      toast.className = "fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold transition-all duration-300 bg-rose-950 text-rose-200 border border-rose-800 flex items-center gap-2";
+      toast.className = "fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-xl text-xs font-bold transition-all duration-300 bg-white text-[#DC2626] border border-[#FECACA] flex items-center gap-2";
     } else {
-      toast.className = "fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold transition-all duration-300 bg-cyan-950 text-cyan-200 border border-cyan-800 flex items-center gap-2";
+      toast.className = "fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-xl text-xs font-bold transition-all duration-300 bg-white text-[#17213B] border border-[#E1E7F2] shadow-lg flex items-center gap-2";
     }
 
-    toast.textContent = message;
+    toast.innerHTML = `<span class="w-2 h-2 rounded-full ${type === 'error' ? 'bg-[#DC2626]' : 'bg-[#2855D9]'}"></span><span>${message}</span>`;
     toast.style.transform = "translateY(0)";
     toast.style.opacity = "1";
 
