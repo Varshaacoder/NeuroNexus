@@ -2,14 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Brain, Activity, CheckSquare, Cpu, Heart, Play,
   ArrowRight, ShieldCheck, CheckCircle2, ChevronRight, BookOpen,
-  Wifi, AlertTriangle, EyeOff, Sparkles, HelpCircle, Lock
+  Wifi, AlertTriangle, EyeOff, Sparkles, HelpCircle, Lock, Menu, X
 } from 'lucide-react';
-import type { UserProfile } from '../types';
+import type { UserProfile, AppPage } from '../types';
 import { PRESET_USERS } from '../mockData';
 
 interface LandingPageProps {
   onEnterDashboard: (user?: UserProfile) => void;
   onOpenAuth: () => void;
+  onNavigatePage?: (page: AppPage) => void;
 }
 
 const YouTubeIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
@@ -18,10 +19,11 @@ const YouTubeIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }
   </svg>
 );
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOpenAuth }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOpenAuth, onNavigatePage }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<'good' | 'noisy' | 'disconnected'>('good');
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Animated Waveform Canvas
   useEffect(() => {
@@ -73,6 +75,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
     return () => cancelAnimationFrame(animId);
   }, []);
 
+  const handleOpenParentPortal = () => {
+    if (onNavigatePage) {
+      onNavigatePage('parent-portal');
+    } else {
+      onEnterDashboard(PRESET_USERS.guardian_eleanor);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-[#17213B] flex flex-col font-sans">
       
@@ -85,7 +95,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
             </span>
             <span className="font-bold text-[#8755E8]">Infinite Loopers</span>
             <span className="text-[#CBD5E1] hidden sm:inline">|</span>
-            <span className="text-[#64708A] font-semibold hidden md:inline">1-Click Demo Evaluation:</span>
+            <span className="text-[#64708A] font-semibold hidden md:inline">Instant Role Selector:</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -94,7 +104,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
               className="px-3 py-1 rounded-lg bg-[#EEF3FF] hover:bg-[#D5E2FF] text-[#2855D9] border border-[#D5E2FF] text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Student (Judges)</span>
+              <span>Student (Alex)</span>
             </button>
             <button
               onClick={() => onEnterDashboard(PRESET_USERS.faculty_thorne)}
@@ -103,7 +113,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
               🏛️ Faculty
             </button>
             <button
-              onClick={() => onEnterDashboard(PRESET_USERS.guardian_eleanor)}
+              onClick={handleOpenParentPortal}
               className="px-3 py-1 rounded-lg bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] text-xs font-bold transition-all shadow-2xs"
             >
               🛡️ Parent Portal
@@ -143,16 +153,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
             <a href="#wellbeing" className="hover:text-[#2855D9] transition-colors">Wellbeing</a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={handleOpenParentPortal}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] text-xs font-bold transition-all shadow-2xs"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Parent Portal</span>
+            </button>
             <button
               onClick={() => onEnterDashboard(PRESET_USERS.demo_student)}
               className="px-4 py-2 rounded-xl bg-[#2855D9] hover:bg-[#1E44B5] text-white text-xs font-bold shadow-md shadow-[#2855D9]/20 transition-all flex items-center gap-2"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              <span>Launch Dashboard</span>
+              <span className="hidden sm:inline">Launch Dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl text-[#64708A] hover:bg-[#F3F6FF] border border-[#E1E7F2] shrink-0"
+              aria-label="Toggle navigation"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5 text-[#2855D9]" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Menu for Landing Page */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[#E1E7F2] bg-white px-4 py-3 space-y-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">Features</a>
+            <a href="#courses" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">Courses</a>
+            <a href="#neuro" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">EEG Studio</a>
+            <a href="#ai" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">AI Insights</a>
+            <a href="#wellbeing" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">Wellbeing</a>
+            <div className="pt-2 border-t border-[#E1E7F2] flex flex-col gap-2">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleOpenParentPortal();
+                }}
+                className="w-full py-2.5 rounded-xl bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-xs font-bold flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Parent / Guardian Portal</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onEnterDashboard(PRESET_USERS.demo_student);
+                }}
+                className="w-full py-2.5 rounded-xl bg-[#2855D9] text-white text-xs font-bold flex items-center justify-center gap-2"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Student Dashboard</span>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ── 1. HERO SECTION (White with Soft Blue-to-Violet Atmospheric Glow) ─── */}
@@ -194,14 +252,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
                 className="px-6 py-3.5 rounded-xl font-bold text-white bg-[#2855D9] hover:bg-[#1E44B5] shadow-lg shadow-[#2855D9]/20 transition-all transform active:scale-95 flex items-center gap-2"
               >
                 <Play className="w-4 h-4 fill-current" />
-                <span>Enter Judge Demo Walkthrough</span>
+                <span>Explore Student Dashboard</span>
               </button>
               <button
-                onClick={() => onEnterDashboard(PRESET_USERS.guardian_eleanor)}
-                className="px-6 py-3.5 rounded-xl font-bold text-[#17213B] bg-white hover:bg-[#F3F6FF] border border-[#E1E7F2] shadow-xs hover:border-[#2855D9]/30 transition-all flex items-center gap-2"
+                onClick={handleOpenParentPortal}
+                className="px-6 py-3.5 rounded-xl font-bold text-[#059669] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#A7F3D0] shadow-xs hover:border-[#059669]/40 transition-all flex items-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4 text-[#059669]" />
-                <span>Parent/Guardian Portal</span>
+                <span>Parent / Guardian Portal</span>
               </button>
             </div>
 

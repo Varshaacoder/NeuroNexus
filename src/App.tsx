@@ -47,8 +47,11 @@ export default function App() {
       // Ignore parse errors
     }
     // If opening an authorized route directly without previous session,
-    // default to demo student so visitors/judges can inspect valid routes without roadblock
+    // default to demo student (or Eleanor for parent-portal) so visitors can inspect valid routes without roadblock
     if (initialRoute.page !== 'landing' && !initialRoute.authModal) {
+      if (initialRoute.page === 'parent-portal') {
+        return PRESET_USERS.guardian_eleanor;
+      }
       return PRESET_USERS.demo_student;
     }
     return null;
@@ -92,14 +95,16 @@ export default function App() {
       setOpenModal(route.modal as ModalType);
       setShowNotifications(false);
 
-      // Restore session if user exists in storage
+      // Restore session if user exists in storage or default to persona for route
       if (!currentUser && route.page !== 'landing' && !route.authModal) {
         try {
           const saved = localStorage.getItem('campus_qa_user');
           if (saved) setCurrentUser(JSON.parse(saved));
+          else if (route.page === 'parent-portal') setCurrentUser(PRESET_USERS.guardian_eleanor);
           else setCurrentUser(PRESET_USERS.demo_student);
         } catch {
-          setCurrentUser(PRESET_USERS.demo_student);
+          if (route.page === 'parent-portal') setCurrentUser(PRESET_USERS.guardian_eleanor);
+          else setCurrentUser(PRESET_USERS.demo_student);
         }
       }
 
@@ -151,7 +156,7 @@ export default function App() {
     navigateHistory('/', { page: 'landing', authModal: false, authMode: 'login', modal: null });
   };
 
-  const handleLogin = (user: UserProfile) => {
+  const handleLogin = (user: UserProfile, targetPage?: AppPage) => {
     setCurrentUser(user);
     setShowAuthModal(false);
     try {
@@ -166,7 +171,15 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    handleNavigate('dashboard');
+    if (targetPage) {
+      handleNavigate(targetPage);
+    } else if (user.role === 'Parent/Guardian') {
+      handleNavigate('parent-portal');
+    } else if (user.role === 'Faculty Mentor') {
+      handleNavigate('faculty');
+    } else {
+      handleNavigate('dashboard');
+    }
   };
 
   const handleLogout = () => {
@@ -212,7 +225,7 @@ export default function App() {
           </div>
           <AuthPage
             initialMode={authMode}
-            onLoginSuccess={handleLogin}
+            onLoginSuccess={(u) => handleLogin(u)}
             onModeChange={(m) => {
               setAuthMode(m);
               navigateHistory(m === 'register' ? '/signup' : '/signin', { page: 'landing', authModal: true, authMode: m }, { replace: true });
@@ -221,10 +234,43 @@ export default function App() {
         </div>
       );
     }
+
+    if (currentPage === 'parent-portal') {
+      return (
+        <div className="min-h-screen bg-slate-50">
+          <Navbar
+            currentUser={PRESET_USERS.guardian_eleanor}
+            onLogout={handleLogout}
+            onSwitchUser={handleSwitchUser}
+            onOpenNotifications={() => setShowNotifications(!showNotifications)}
+            unreadCount={0}
+            currentPage="parent-portal"
+            onNavigate={handleNavigate}
+            unreadMessages={0}
+            onOpenTimer={() => setOpenModal('pomodoro')}
+          />
+          <ParentGuardianPortal
+            user={PRESET_USERS.guardian_eleanor}
+            onNavigateDashboard={() => handleNavigate('dashboard')}
+            onNavigateCourses={() => handleNavigate('courses')}
+            onNavigateWellbeing={() => handleNavigate('wellbeing')}
+            onLogout={handleLogout}
+          />
+        </div>
+      );
+    }
+
     return (
       <LandingPage
         onEnterDashboard={(user) => handleLogin(user || PRESET_USERS.demo_student)}
         onOpenAuth={() => openAuth('login')}
+        onNavigatePage={(page) => {
+          if (page === 'parent-portal') {
+            handleLogin(PRESET_USERS.guardian_eleanor, 'parent-portal');
+          } else {
+            handleNavigate(page);
+          }
+        }}
       />
     );
   }
@@ -239,7 +285,15 @@ export default function App() {
       case 'Administrator':
         return <AdminView user={currentUser} />;
       case 'Parent/Guardian':
-        return <ParentGuardianPortal user={currentUser} onNavigateDashboard={() => handleNavigate('dashboard')} />;
+        return (
+          <ParentGuardianPortal
+            user={currentUser}
+            onNavigateDashboard={() => handleNavigate('dashboard')}
+            onNavigateCourses={() => handleNavigate('courses')}
+            onNavigateWellbeing={() => handleNavigate('wellbeing')}
+            onLogout={handleLogout}
+          />
+        );
       default:
         return renderStudentDashboard();
     }
@@ -252,10 +306,25 @@ export default function App() {
           <LandingPage
             onEnterDashboard={() => handleNavigate('dashboard')}
             onOpenAuth={() => openAuth('login')}
+            onNavigatePage={(page) => {
+              if (page === 'parent-portal') {
+                handleLogin(PRESET_USERS.guardian_eleanor, 'parent-portal');
+              } else {
+                handleNavigate(page);
+              }
+            }}
           />
         );
       case 'parent-portal':
-        return <ParentGuardianPortal user={currentUser} onNavigateDashboard={() => handleNavigate('dashboard')} />;
+        return (
+          <ParentGuardianPortal
+            user={currentUser.role === 'Parent/Guardian' ? currentUser : PRESET_USERS.guardian_eleanor}
+            onNavigateDashboard={() => handleNavigate('dashboard')}
+            onNavigateCourses={() => handleNavigate('courses')}
+            onNavigateWellbeing={() => handleNavigate('wellbeing')}
+            onLogout={handleLogout}
+          />
+        );
       case 'wellbeing':
         return (
           <StudentWellbeingPage
@@ -374,8 +443,8 @@ export default function App() {
         onOpenHardwareManager={() => setShowHardwareModal(true)}
       />
 
-      {/* Persistent Demo Mode Banner */}
-      {isDemoUser(currentUser.id, currentUser.email) && (
+      {/* Persistent Demo Mode Banner (Suppressed on Parent Portal) */}
+      {isDemoUser(currentUser.id, currentUser.email) && currentPage !== 'parent-portal' && currentUser.role !== 'Parent/Guardian' && (
         <div className="bg-gradient-to-r from-amber-600 via-indigo-700 to-purple-800 text-white px-4 py-2 text-xs shadow-sm flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="bg-black/30 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border border-white/20">

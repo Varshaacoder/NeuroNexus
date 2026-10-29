@@ -113,6 +113,21 @@ class NeuronexusApp {
     }
   }
 
+  toggleMobileMenu() {
+    const drawer = document.getElementById("mobileNavDrawer");
+    if (drawer) {
+      drawer.classList.toggle("hidden");
+    }
+    if (window.feather) feather.replace();
+  }
+
+  closeMobileMenu() {
+    const drawer = document.getElementById("mobileNavDrawer");
+    if (drawer) {
+      drawer.classList.add("hidden");
+    }
+  }
+
   setCurrentUser(user) {
     this.currentUser = user;
     const nameEl = document.getElementById("userName");
@@ -136,7 +151,7 @@ class NeuronexusApp {
       facultyBtn.classList.toggle("hidden", !(user.role === "faculty" || user.role === "admin"));
     }
     if (parentBtn) {
-      parentBtn.classList.toggle("hidden", !(user.role === "parent" || user.role === "admin"));
+      parentBtn.classList.remove("hidden");
     }
 
     if (window.feather) feather.replace();

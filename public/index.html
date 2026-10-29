@@ -86,12 +86,12 @@
         <button onclick="app.navigate('ai-insights')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="ai-insights">AI Insights</button>
         <button onclick="app.navigate('wellbeing')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="wellbeing">Family & Wellbeing</button>
         <button onclick="app.navigate('qa')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="qa">Campus Q&A</button>
+        <button onclick="app.navigate('parent')" id="navParentBtn" class="nav-link px-3 py-1.5 rounded-lg text-[#059669] hover:bg-[#ECFDF5] transition-colors font-semibold" data-view="parent">Parent Portal</button>
         <button onclick="app.navigate('faculty')" id="navFacultyBtn" class="nav-link hidden px-3 py-1.5 rounded-lg text-[#8755E8] hover:bg-[#F6F0FF] transition-colors font-semibold" data-view="faculty">Faculty Hub</button>
-        <button onclick="app.navigate('parent')" id="navParentBtn" class="nav-link hidden px-3 py-1.5 rounded-lg text-[#059669] hover:bg-[#ECFDF5] transition-colors font-semibold" data-view="parent">Parent Portal</button>
       </nav>
 
       <!-- Right User Controls & Privacy Center -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3">
         <button onclick="app.navigate('privacy')" class="p-2 text-[#64708A] hover:text-[#2855D9] hover:bg-[#F3F6FF] rounded-xl transition-colors border border-transparent hover:border-[#E1E7F2]" title="Consent & Privacy Center">
           <i data-feather="shield" class="w-5 h-5"></i>
         </button>
@@ -104,8 +104,49 @@
             <div id="userRoleBadge" class="text-[10px] text-[#2855D9] font-bold uppercase tracking-wider">Student</div>
           </div>
         </div>
+
+        <!-- Mobile Navigation Hamburger Button -->
+        <button id="mobileNavToggleBtn" onclick="app.toggleMobileMenu()" class="md:hidden p-2 text-[#64708A] hover:text-[#2855D9] hover:bg-[#F3F6FF] rounded-xl transition-colors border border-[#E1E7F2]" aria-label="Toggle navigation">
+          <i data-feather="menu" class="w-5 h-5"></i>
+        </button>
       </div>
 
+    </div>
+
+    <!-- Mobile Collapsible Menu Drawer -->
+    <div id="mobileNavDrawer" class="hidden md:hidden border-t border-[#E1E7F2] bg-white px-4 py-3 space-y-1 shadow-xl">
+      <button onclick="app.navigate('landing'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2">
+        <i data-feather="home" class="w-4 h-4 text-[#2855D9]"></i>
+        <span>Home</span>
+      </button>
+      <button onclick="app.navigate('dashboard'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2">
+        <i data-feather="grid" class="w-4 h-4 text-[#2855D9]"></i>
+        <span>Student Dashboard</span>
+      </button>
+      <button onclick="app.navigate('courses'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2">
+        <i data-feather="book-open" class="w-4 h-4 text-[#2855D9]"></i>
+        <span>Courses</span>
+      </button>
+      <button onclick="app.navigate('neuro'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2">
+        <i data-feather="activity" class="w-4 h-4 text-[#00AFC1]"></i>
+        <span>Neuro Analysis</span>
+      </button>
+      <button onclick="app.navigate('ai-insights'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2">
+        <i data-feather="cpu" class="w-4 h-4 text-[#8755E8]"></i>
+        <span>AI Insights</span>
+      </button>
+      <button onclick="app.navigate('wellbeing'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2">
+        <i data-feather="heart" class="w-4 h-4 text-[#8755E8]"></i>
+        <span>Family & Wellbeing</span>
+      </button>
+      <button onclick="app.navigate('parent'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#059669] hover:bg-[#ECFDF5] text-xs font-bold flex items-center gap-2">
+        <i data-feather="shield-check" class="w-4 h-4 text-[#059669]"></i>
+        <span>Parent / Guardian Portal</span>
+      </button>
+      <button onclick="app.navigate('faculty'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#8755E8] hover:bg-[#F6F0FF] text-xs font-semibold flex items-center gap-2">
+        <i data-feather="user-check" class="w-4 h-4 text-[#8755E8]"></i>
+        <span>Faculty Hub</span>
+      </button>
     </div>
   </header>
 
@@ -140,12 +181,13 @@
           </p>
 
           <div class="flex flex-wrap items-center gap-4 pt-2">
-            <button onclick="app.runDemoStep(2)" class="px-6 py-3.5 rounded-xl font-bold text-white bg-[#2855D9] hover:bg-[#1E44B5] shadow-lg shadow-[#2855D9]/20 transition-all transform active:scale-95 flex items-center gap-2">
+            <button onclick="app.navigate('dashboard')" class="px-6 py-3.5 rounded-xl font-bold text-white bg-[#2855D9] hover:bg-[#1E44B5] shadow-lg shadow-[#2855D9]/20 transition-all transform active:scale-95 flex items-center gap-2">
               <i data-feather="play" class="w-4 h-4 fill-current"></i>
-              <span>Enter Judge Demo Walkthrough</span>
+              <span>Explore Student Dashboard</span>
             </button>
-            <button onclick="app.navigate('dashboard')" class="px-6 py-3.5 rounded-xl font-bold text-[#17213B] bg-white hover:bg-[#F3F6FF] border border-[#E1E7F2] shadow-xs hover:border-[#2855D9]/30 transition-all">
-              Explore Student Dashboard
+            <button onclick="app.navigate('parent')" class="px-6 py-3.5 rounded-xl font-bold text-[#059669] bg-[#ECFDF5] hover:bg-[#D1FAE5] border border-[#A7F3D0] shadow-xs hover:border-[#059669]/40 transition-all flex items-center gap-2">
+              <i data-feather="shield-check" class="w-4 h-4 text-[#059669]"></i>
+              <span>Parent / Guardian Portal</span>
             </button>
           </div>
 
@@ -995,49 +1037,404 @@
   </section>
 
   <!-- =====================================================================
-       VIEW 9: PARENT / GUARDIAN PORTAL (LIGHT THEME)
+       VIEW 9: PARENT / GUARDIAN PORTAL (LIGHT THEME — DEDICATED 8-SECTION DASHBOARD)
        ===================================================================== -->
-  <section id="view-parent" class="view-section hidden py-8 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto flex-1 w-full space-y-8 bg-white">
+  <section id="view-parent" class="view-section hidden py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex-1 w-full space-y-8 bg-white">
     
-    <div>
-      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-xs font-bold mb-2">
-        <i data-feather="shield-check" class="w-3.5 h-3.5"></i> Authorized Guardian Portal
+    <!-- Portal Header & Welcome -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E1E7F2] pb-6">
+      <div>
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] text-xs font-bold mb-2">
+          <i data-feather="shield-check" class="w-3.5 h-3.5"></i> Authorized Guardian Portal
+        </div>
+        <h2 class="text-3xl font-black text-[#17213B] tracking-tight">Parent &amp; Guardian Dashboard</h2>
+        <p class="text-[#64708A] text-sm mt-1">
+          Authorized academic and attendance overview for <span class="text-[#17213B] font-bold">Alex Rivera</span> (Student ID: <span class="font-mono text-[#2855D9] font-bold">STU-2026-8941</span>).
+        </p>
       </div>
-      <h2 class="text-3xl font-black text-[#17213B]">Family Support & Wellbeing Overview</h2>
-      <p class="text-[#64708A] text-sm mt-1">
-        Viewing authorized records for <span class="text-[#17213B] font-bold">Alex Rivera</span>. Logged in as <span class="text-[#059669] font-bold">Eleanor Rivera</span> (Guardian).
-      </p>
-    </div>
 
-    <!-- Guardian Privacy Guarantee Banner -->
-    <div class="glass-panel p-5 border border-[#A7F3D0] bg-[#ECFDF5] rounded-2xl text-xs text-[#065F46] leading-relaxed space-y-1">
-      <div class="font-bold flex items-center gap-1.5 text-sm text-[#047857]">
-        <i data-feather="eye-off" class="w-4 h-4"></i>
-        Privacy Boundary Enforced
-      </div>
-      <p>This portal displays ONLY academic summaries and wellbeing check-ins that the student has explicitly authorized. Private student notes and raw EEG biopotentials are strictly inaccessible.</p>
-    </div>
-
-    <!-- Authorized Academic Summary -->
-    <div class="glass-panel p-6 space-y-4 bg-white rounded-2xl border border-[#E1E7F2] shadow-xs">
-      <h3 class="text-lg font-bold text-[#17213B] border-b border-[#E1E7F2] pb-3 flex items-center gap-2">
-        <i data-feather="book-open" class="w-5 h-5 text-[#2855D9]"></i>
-        Authorized Academic Progress Summary
-      </h3>
-      <div id="parentAcademicSummaryList" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Injected by JS -->
+      <div class="flex items-center gap-2">
+        <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-white hover:bg-[#F3F6FF] border border-[#E1E7F2] text-[#17213B] text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+          <i data-feather="download" class="w-3.5 h-3.5 text-[#64708A]"></i>
+          <span>Export Report</span>
+        </button>
+        <button onclick="app.switchRole('student')" class="px-3.5 py-2 rounded-xl bg-[#2855D9] hover:bg-[#1E44B5] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
+          <i data-feather="external-link" class="w-3.5 h-3.5"></i>
+          <span>Student View</span>
+        </button>
       </div>
     </div>
 
-    <!-- Shared Wellbeing Check-ins -->
-    <div class="glass-panel p-6 space-y-4 bg-white rounded-2xl border border-[#E1E7F2] shadow-xs">
-      <h3 class="text-lg font-bold text-[#17213B] border-b border-[#E1E7F2] pb-3 flex items-center gap-2">
-        <i data-feather="heart" class="w-5 h-5 text-[#8755E8]"></i>
-        Student-Shared Wellbeing Check-ins
-      </h3>
-      <div id="parentSharedWellbeingList" class="space-y-4">
-        <!-- Injected by JS -->
+    <!-- Guardian Privacy Guarantee Banner (Strict separation from Judge evaluation) -->
+    <div class="p-4 rounded-2xl bg-[#ECFDF5] border border-[#A7F3D0] flex items-start gap-3 text-xs text-[#065F46] leading-relaxed">
+      <i data-feather="lock" class="w-4 h-4 text-[#059669] shrink-0 mt-0.5"></i>
+      <div>
+        <strong class="text-[#047857]">Privacy Boundary Guarantee:</strong>
+        This portal displays verified academic coursework, teacher feedback, and attendance records authorized by student consent. Private personal notes and raw biometric EEG signals are strictly inaccessible.
       </div>
+    </div>
+
+    <!-- ── SECTION A: STUDENT OVERVIEW ──────────────────────────────────────── -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="glass-panel p-5 bg-gradient-to-br from-[#EEF3FF] to-white border border-[#D5E2FF] rounded-2xl space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-xl bg-[#2855D9] text-white font-black text-lg flex items-center justify-center shadow-md">
+            AR
+          </div>
+          <div class="min-w-0">
+            <h3 class="font-bold text-[#17213B] text-base truncate">Alex Rivera</h3>
+            <p class="text-xs text-[#64708A]">B.Tech Computer Science</p>
+            <span class="inline-block px-2 py-0.5 mt-1 rounded text-[10px] font-black bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF]">
+              Year 2 • Section A
+            </span>
+          </div>
+        </div>
+        <div class="text-[11px] text-[#64708A] pt-2 border-t border-[#E1E7F2] space-y-1">
+          <div>Advisor: <strong>Prof. Robert Chen</strong></div>
+          <div>Guardian: <strong>Eleanor Vance (Rivera)</strong></div>
+        </div>
+      </div>
+
+      <div class="glass-panel p-5 bg-white border border-[#E1E7F2] rounded-2xl space-y-2">
+        <div class="text-xs font-bold text-[#64708A] uppercase tracking-wider">Overall Academic GPA</div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-black text-[#17213B]">3.78</span>
+          <span class="text-xs font-semibold text-[#64708A]">/ 4.0</span>
+          <span class="ml-auto text-xs font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
+            Top 12%
+          </span>
+        </div>
+        <div class="w-full bg-[#F3F6FF] rounded-full h-2">
+          <div class="bg-gradient-to-r from-[#2855D9] to-[#8755E8] h-2 rounded-full" style="width: 88.4%;"></div>
+        </div>
+        <div class="text-[11px] text-[#64708A]">Average coursework score: <strong>88.4%</strong></div>
+      </div>
+
+      <div class="glass-panel p-5 bg-white border border-[#E1E7F2] rounded-2xl space-y-2">
+        <div class="text-xs font-bold text-[#64708A] uppercase tracking-wider">Attendance Rate</div>
+        <div class="flex items-baseline gap-2">
+          <span class="text-3xl font-black text-[#059669]">94.8%</span>
+          <span class="ml-auto text-xs font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">
+            Good Standing
+          </span>
+        </div>
+        <div class="w-full bg-[#F3F6FF] rounded-full h-2">
+          <div class="bg-[#059669] h-2 rounded-full" style="width: 94.8%;"></div>
+        </div>
+        <div class="text-[11px] text-[#64708A]">Attended <strong>74</strong> of <strong>78</strong> class days</div>
+      </div>
+
+      <div class="glass-panel p-5 bg-white border border-[#E1E7F2] rounded-2xl space-y-2">
+        <div class="text-xs font-bold text-[#64708A] uppercase tracking-wider">Pending Assessments</div>
+        <div class="text-3xl font-black text-[#2855D9]">2</div>
+        <div class="text-[11px] text-[#64708A]">
+          Next: <strong>CS201 Midterm Lab</strong><br>
+          <span class="text-[#D97706] font-semibold">Due in 4 days</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION B: ACADEMIC PERFORMANCE (Subject-wise marks & grades) ────── -->
+    <div class="glass-panel p-6 bg-white border border-[#E1E7F2] rounded-2xl space-y-5 shadow-xs">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#E1E7F2] pb-3">
+        <div>
+          <h3 class="text-lg font-bold text-[#17213B] flex items-center gap-2">
+            <i data-feather="book-open" class="w-5 h-5 text-[#2855D9]"></i>
+            Subject-Wise Marks &amp; Academic Grades
+          </h3>
+          <p class="text-xs text-[#64708A]">Enrolled courses and faculty performance appraisals for Current Semester 4.</p>
+        </div>
+        <span class="text-xs font-bold px-3 py-1 rounded-full bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF]">
+          5 Active Courses
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Subject 1 -->
+        <div class="p-4 rounded-xl bg-[#F8FAFD] border border-[#E1E7F2] space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-[#2855D9] bg-[#EEF3FF] px-2 py-0.5 rounded">CS201</span>
+            <span class="text-xs font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">A+ (92%)</span>
+          </div>
+          <h4 class="font-bold text-sm text-[#17213B]">Object-Oriented Programming (Java)</h4>
+          <div class="text-xs text-[#64708A]">Faculty: <strong>Prof. Robert Chen</strong></div>
+          <p class="text-xs text-[#17213B] bg-white p-2.5 rounded-lg border border-[#E1E7F2] italic">
+            "Exceptional grasp of inheritance hierarchies and polymorphism. High active participation in lab sessions."
+          </p>
+        </div>
+
+        <!-- Subject 2 -->
+        <div class="p-4 rounded-xl bg-[#FFFBEB]/40 border border-[#FDE68A] space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-[#D97706] bg-[#FFFBEB] px-2 py-0.5 rounded">CS301</span>
+            <span class="text-xs font-bold text-[#D97706] bg-[#FFFBEB] px-2 py-0.5 rounded-full border border-[#FDE68A]">B (74%)</span>
+          </div>
+          <h4 class="font-bold text-sm text-[#17213B]">Data Structures &amp; Algorithms</h4>
+          <div class="text-xs text-[#64708A]">Faculty: <strong>Dr. Aris Thorne</strong></div>
+          <p class="text-xs text-[#17213B] bg-white p-2.5 rounded-lg border border-[#FDE68A] italic">
+            "Solid grasp of asymptotic bounds, but recursion tree stack tracing requires focused practice before finals."
+          </p>
+        </div>
+
+        <!-- Subject 3 -->
+        <div class="p-4 rounded-xl bg-[#F8FAFD] border border-[#E1E7F2] space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-[#2855D9] bg-[#EEF3FF] px-2 py-0.5 rounded">CS204</span>
+            <span class="text-xs font-bold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#A7F3D0]">A (89%)</span>
+          </div>
+          <h4 class="font-bold text-sm text-[#17213B]">Database Management Systems</h4>
+          <div class="text-xs text-[#64708A]">Faculty: <strong>Prof. Elena Rostova</strong></div>
+          <p class="text-xs text-[#17213B] bg-white p-2.5 rounded-lg border border-[#E1E7F2] italic">
+            "Excellent project work on 3NF relational schema design and query indexing."
+          </p>
+        </div>
+
+        <!-- Subject 4 -->
+        <div class="p-4 rounded-xl bg-[#F8FAFD] border border-[#E1E7F2] space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-[#2855D9] bg-[#EEF3FF] px-2 py-0.5 rounded">MATH220</span>
+            <span class="text-xs font-bold text-[#2855D9] bg-[#EEF3FF] px-2 py-0.5 rounded-full border border-[#D5E2FF]">A (86%)</span>
+          </div>
+          <h4 class="font-bold text-sm text-[#17213B]">Discrete Mathematics</h4>
+          <div class="text-xs text-[#64708A]">Faculty: <strong>Dr. Marcus Vance</strong></div>
+          <p class="text-xs text-[#17213B] bg-white p-2.5 rounded-lg border border-[#E1E7F2] italic">
+            "Strong logical reasoning on graph theory and inductive proofs."
+          </p>
+        </div>
+
+        <!-- Subject 5 -->
+        <div class="p-4 rounded-xl bg-[#F8FAFD] border border-[#E1E7F2] space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-[#2855D9] bg-[#EEF3FF] px-2 py-0.5 rounded">CS208</span>
+            <span class="text-xs font-bold text-[#2855D9] bg-[#EEF3FF] px-2 py-0.5 rounded-full border border-[#D5E2FF]">A (88%)</span>
+          </div>
+          <h4 class="font-bold text-sm text-[#17213B]">Computer Systems Architecture</h4>
+          <div class="text-xs text-[#64708A]">Faculty: <strong>Prof. Alan Miller</strong></div>
+          <p class="text-xs text-[#17213B] bg-white p-2.5 rounded-lg border border-[#E1E7F2] italic">
+            "Clear understanding of cache memory pipelines and assembly instruction cycles."
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION C: ATTENDANCE TRACKING & SECTION D: ASSIGNMENTS ───────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Attendance Tracking Card -->
+      <div class="glass-panel p-6 bg-white border border-[#E1E7F2] rounded-2xl space-y-4 shadow-xs">
+        <div class="flex items-center justify-between border-b border-[#E1E7F2] pb-3">
+          <h3 class="text-base font-bold text-[#17213B] flex items-center gap-2">
+            <i data-feather="calendar" class="w-4 h-4 text-[#059669]"></i>
+            Attendance Record &amp; Alerts
+          </h3>
+          <span class="text-xs font-semibold text-[#059669]">Threshold Alert: 85%</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="p-3 rounded-xl bg-[#F8FAFD] border border-[#E1E7F2]">
+            <div class="text-2xl font-black text-[#17213B]">78</div>
+            <div class="text-[11px] text-[#64708A] font-semibold mt-0.5">Total Days</div>
+          </div>
+          <div class="p-3 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0]">
+            <div class="text-2xl font-black text-[#059669]">74</div>
+            <div class="text-[11px] text-[#059669] font-semibold mt-0.5">Attended</div>
+          </div>
+          <div class="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA]">
+            <div class="text-2xl font-black text-[#DC2626]">4</div>
+            <div class="text-[11px] text-[#DC2626] font-semibold mt-0.5">Absences</div>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2">
+          <div class="text-xs font-bold text-[#17213B]">Recent Attendance Log:</div>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center justify-between p-2 rounded-lg bg-[#F8FAFD]">
+              <span>Monday, Oct 27 &bull; CS201 Lab &amp; Lecture</span>
+              <span class="font-bold text-[#059669]">Present</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-[#F8FAFD]">
+              <span>Friday, Oct 24 &bull; CS301 Lecture</span>
+              <span class="font-bold text-[#059669]">Present</span>
+            </div>
+            <div class="flex items-center justify-between p-2 rounded-lg bg-[#FFFBEB]">
+              <span>Wednesday, Oct 15 &bull; MATH220 Lecture</span>
+              <span class="font-bold text-[#D97706]">Excused (Health)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignments & Examinations Card -->
+      <div class="glass-panel p-6 bg-white border border-[#E1E7F2] rounded-2xl space-y-4 shadow-xs">
+        <div class="flex items-center justify-between border-b border-[#E1E7F2] pb-3">
+          <h3 class="text-base font-bold text-[#17213B] flex items-center gap-2">
+            <i data-feather="check-square" class="w-4 h-4 text-[#2855D9]"></i>
+            Assignments &amp; Exam Schedule
+          </h3>
+          <span class="text-xs font-semibold text-[#2855D9]">Upcoming Deadlines</span>
+        </div>
+
+        <div class="space-y-3">
+          <div class="p-3 rounded-xl border border-[#E1E7F2] bg-[#F8FAFD] flex items-center justify-between">
+            <div>
+              <div class="font-bold text-xs text-[#17213B]">CS201 Midterm Lab Benchmark</div>
+              <div class="text-[11px] text-[#64708A]">OOP Principles &amp; Java Generics</div>
+            </div>
+            <div class="text-right">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]">In 4 Days</span>
+              <div class="text-[10px] text-[#64708A] mt-0.5">Nov 2, 2026</div>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl border border-[#E1E7F2] bg-[#F8FAFD] flex items-center justify-between">
+            <div>
+              <div class="font-bold text-xs text-[#17213B]">CS301 Tree &amp; Heap Structures</div>
+              <div class="text-[11px] text-[#64708A]">Diagnostic Mock Benchmark</div>
+            </div>
+            <div class="text-right">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EEF3FF] text-[#2855D9] border border-[#D5E2FF]">Nov 8, 2026</span>
+              <div class="text-[10px] text-[#64708A] mt-0.5">Lab Hall 3</div>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl border border-[#A7F3D0] bg-[#ECFDF5] flex items-center justify-between">
+            <div>
+              <div class="font-bold text-xs text-[#065F46]">CS204 Database Normalization Quiz</div>
+              <div class="text-[11px] text-[#059669]">Score: 96% (Grade A+) &bull; Completed</div>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#A7F3D0] text-[#065F46]">Verified</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION E: TEACHER COMMUNICATION (Directory & Request Interface) ──── -->
+    <div class="glass-panel p-6 bg-white border border-[#E1E7F2] rounded-2xl space-y-5 shadow-xs">
+      <div class="border-b border-[#E1E7F2] pb-3">
+        <h3 class="text-lg font-bold text-[#17213B] flex items-center gap-2">
+          <i data-feather="message-circle" class="w-5 h-5 text-[#8755E8]"></i>
+          Faculty Communication &amp; Advising Requests
+        </h3>
+        <p class="text-xs text-[#64708A] mt-0.5">
+          Request official academic advising or schedule a meeting with Alex's course instructors.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Faculty Directory -->
+        <div class="lg:col-span-5 space-y-3">
+          <div class="text-xs font-bold text-[#17213B] uppercase tracking-wider">Course Instructors:</div>
+          
+          <div class="p-3 rounded-xl border border-[#D5E2FF] bg-[#EEF3FF]/40 space-y-1">
+            <div class="font-bold text-xs text-[#17213B]">Prof. Robert Chen (Primary Academic Advisor)</div>
+            <div class="text-[11px] text-[#64708A]">CS201 &bull; Office: Turing Hall 304</div>
+            <div class="text-[11px] text-[#2855D9] font-medium">Virtual Office Hours: Tuesdays 2:00 PM – 4:00 PM</div>
+          </div>
+
+          <div class="p-3 rounded-xl border border-[#E1E7F2] bg-[#F8FAFD] space-y-1">
+            <div class="font-bold text-xs text-[#17213B]">Dr. Aris Thorne</div>
+            <div class="text-[11px] text-[#64708A]">CS301 Data Structures &bull; Office: Lovelace 112</div>
+            <div class="text-[11px] text-[#64708A]">Office Hours: Thursdays 3:00 PM – 5:00 PM</div>
+          </div>
+
+          <div class="p-3 rounded-xl border border-[#E1E7F2] bg-[#F8FAFD] space-y-1">
+            <div class="font-bold text-xs text-[#17213B]">Prof. Elena Rostova</div>
+            <div class="text-[11px] text-[#64708A]">CS204 Database Systems &bull; Office: Knuth 201</div>
+            <div class="text-[11px] text-[#64708A]">Office Hours: Fridays 10:00 AM – 12:00 PM</div>
+          </div>
+        </div>
+
+        <!-- Advising Request Form -->
+        <div class="lg:col-span-7 bg-[#F8FAFD] p-5 rounded-xl border border-[#E1E7F2] space-y-3">
+          <div class="font-bold text-xs text-[#17213B]">Submit Advising Meeting Request:</div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-[#64708A] mb-1">Select Instructor:</label>
+            <select id="parentTeacherSelect" class="w-full px-3 py-2 text-xs bg-white border border-[#E1E7F2] rounded-lg text-[#17213B]">
+              <option>Prof. Robert Chen (CS201 Java OOP &bull; Primary Advisor)</option>
+              <option>Dr. Aris Thorne (CS301 Data Structures &amp; Algorithms)</option>
+              <option>Prof. Elena Rostova (CS204 Database Systems)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-[#64708A] mb-1">Meeting Topic:</label>
+            <input type="text" id="parentMeetingTopic" value="Academic Progress &amp; Semester 4 Guidance" class="w-full px-3 py-2 text-xs bg-white border border-[#E1E7F2] rounded-lg text-[#17213B]">
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-[#64708A] mb-1">Message / Note to Instructor:</label>
+            <textarea id="parentTeacherMessage" rows="3" placeholder="State your availability or specific questions regarding Alex's progress..." class="w-full px-3 py-2 text-xs bg-white border border-[#E1E7F2] rounded-lg text-[#17213B]"></textarea>
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] text-[#64708A]">Faculty typically respond within 1 business day.</span>
+            <button onclick="alert('Advising meeting request recorded. An institutional calendar invitation has been prepared for Eleanor Vance.')" class="px-4 py-2 rounded-lg bg-[#2855D9] hover:bg-[#1E44B5] text-white text-xs font-bold transition-all shadow-2xs">
+              Send Advising Request
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION G: STUDENT PROGRESS & CONSTRUCTIVE FAMILY DISCUSSION ────── -->
+    <div class="glass-panel p-6 bg-white border border-[#E1E7F2] rounded-2xl space-y-4 shadow-xs">
+      <div class="border-b border-[#E1E7F2] pb-3">
+        <h3 class="text-base font-bold text-[#17213B] flex items-center gap-2">
+          <i data-feather="heart" class="w-4 h-4 text-[#8755E8]"></i>
+          Student Progress &amp; Constructive Discussion Starters
+        </h3>
+        <p class="text-xs text-[#64708A] mt-0.5">
+          Actionable discussion points based on course performance to support Alex's learning journey positively.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-4 rounded-xl bg-[#ECFDF5] border border-[#A7F3D0] space-y-2">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-[#065F46]">
+            <i data-feather="check-circle" class="w-3.5 h-3.5"></i>
+            Celebration Point
+          </div>
+          <div class="font-bold text-xs text-[#17213B]">Outstanding Java OOP Mastery</div>
+          <p class="text-xs text-[#065F46]">
+            Alex achieved a 92% in CS201 and has shown great enthusiasm for polymorphic code architecture. Acknowledge this strong accomplishment!
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] space-y-2">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-[#92400E]">
+            <i data-feather="info" class="w-3.5 h-3.5"></i>
+            Supportive Check-in
+          </div>
+          <div class="font-bold text-xs text-[#17213B]">Recursion in CS301</div>
+          <p class="text-xs text-[#92400E]">
+            Ask Alex how the Data Structures mock assessments felt, especially recursive stack tracing. Encourage taking short study breaks with the Pomodoro tool.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-[#EEF3FF] border border-[#D5E2FF] space-y-2">
+          <div class="flex items-center gap-1.5 font-bold text-xs text-[#2855D9]">
+            <i data-feather="compass" class="w-3.5 h-3.5"></i>
+            Future Planning
+          </div>
+          <div class="font-bold text-xs text-[#17213B]">Elective Selections for Year 3</div>
+          <p class="text-xs text-[#1E44B5]">
+            With strong grades in Databases (89%), Alex is in a prime position for Advanced Distributed Systems and Cloud Computing electives.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SECTION H: GUARDIAN PROFILE & SETTINGS ───────────────────────────── -->
+    <div class="p-5 rounded-2xl bg-[#F8FAFD] border border-[#E1E7F2] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs">
+      <div>
+        <div class="font-bold text-[#17213B] text-sm">Eleanor Vance (Rivera)</div>
+        <div class="text-[#64708A]">Registered Guardian Email: <strong>eleanor.rivera@guardian.nexus.edu</strong> &bull; Phone: (555) 392-1084</div>
+        <div class="text-[11px] text-[#059669] font-medium mt-0.5">&bull; Weekly email digest enabled &bull; Attendance SMS alerts enabled (&lt; 85%)</div>
+      </div>
+      <button onclick="app.switchRole('student')" class="px-4 py-2 rounded-xl bg-white hover:bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA] font-bold text-xs transition-colors shrink-0">
+        Exit Guardian Portal
+      </button>
     </div>
 
   </section>

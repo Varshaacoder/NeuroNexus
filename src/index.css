@@ -55,3 +55,27 @@
 .animate-float {
   animation: floatSlow 3s ease-in-out infinite;
 }
+
+/* ============================================================
+   GUARANTEED HORIZONTAL DESKTOP NAVIGATION
+   ============================================================ */
+@media (min-width: 1024px) {
+  header nav[aria-label="Main Navigation"],
+  nav[aria-label="Main Navigation"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+  }
+
+  header nav[aria-label="Main Navigation"] button,
+  nav[aria-label="Main Navigation"] button {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+}
