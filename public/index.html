@@ -61,43 +61,68 @@
        MAIN NAVIGATION HEADER (LIGHT THEME)
        ===================================================================== -->
   <header class="bg-white/95 backdrop-blur-md border-b border-[#E1E7F2] sticky top-10 z-40 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <div class="w-full max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
       
       <!-- Brand Logo -->
-      <div class="flex items-center gap-3 cursor-pointer select-none" onclick="app.navigate('landing')">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2855D9] via-[#6842D0] to-[#8755E8] flex items-center justify-center text-white shadow-md shadow-[#2855D9]/20">
+      <div class="flex items-center gap-2 sm:gap-3 cursor-pointer select-none shrink-0" onclick="app.navigate('landing')">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#2855D9] via-[#6842D0] to-[#8755E8] flex items-center justify-center text-white shadow-md shadow-[#2855D9]/20 shrink-0">
           <i data-feather="activity" class="w-5 h-5 text-white"></i>
         </div>
         <div>
-          <span class="text-xl font-black tracking-tight text-[#17213B]">NEURO<span class="text-gradient-royal">NEXUS</span></span>
-          <span class="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#EEF3FF] text-[#2855D9] rounded-md border border-[#D5E2FF]">Learning + Neuro</span>
+          <span class="text-lg sm:text-xl font-black tracking-tight text-[#17213B] whitespace-nowrap">NEURO<span class="text-gradient-royal">NEXUS</span></span>
+          <span class="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#EEF3FF] text-[#2855D9] rounded-md border border-[#D5E2FF] whitespace-nowrap">Learning + Neuro</span>
         </div>
       </div>
 
-      <!-- Center Navigation Tabs (Role Aware) -->
-      <nav class="hidden md:flex items-center gap-1 text-sm font-medium" id="mainNav">
-        <button onclick="app.navigate('landing')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="landing">Home</button>
-        <button onclick="app.navigate('dashboard')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="dashboard">Dashboard</button>
-        <button onclick="app.navigate('courses')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="courses">Courses</button>
-        <button onclick="app.navigate('neuro')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors flex items-center gap-1.5" data-view="neuro">
+      <!-- Center Navigation Tabs (Role Aware & Responsive) -->
+      <nav class="hidden lg:flex items-center gap-1.5 text-sm font-medium shrink min-w-0" id="mainNav">
+        <button onclick="app.navigate('landing')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors whitespace-nowrap" data-view="landing">Home</button>
+        <button onclick="app.navigate('dashboard')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors whitespace-nowrap" data-view="dashboard">Dashboard</button>
+        <button onclick="app.navigate('courses')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors whitespace-nowrap" data-view="courses">Courses</button>
+        <button onclick="app.navigate('neuro')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors flex items-center gap-1.5 whitespace-nowrap" data-view="neuro">
           <span class="w-2 h-2 rounded-full bg-[#00AFC1] pulse-indicator"></span>
           <span>Neuro Analysis</span>
         </button>
-        <button onclick="app.navigate('ai-insights')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="ai-insights">AI Insights</button>
-        <button onclick="app.navigate('wellbeing')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="wellbeing">Family & Wellbeing</button>
-        <button onclick="app.navigate('qa')" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors" data-view="qa">Campus Q&A</button>
-        <button onclick="app.navigate('parent')" id="navParentBtn" class="nav-link px-3 py-1.5 rounded-lg text-[#059669] hover:bg-[#ECFDF5] transition-colors font-semibold" data-view="parent">Parent Portal</button>
-        <button onclick="app.navigate('faculty')" id="navFacultyBtn" class="nav-link hidden px-3 py-1.5 rounded-lg text-[#8755E8] hover:bg-[#F6F0FF] transition-colors font-semibold" data-view="faculty">Faculty Hub</button>
+
+        <!-- More Dropdown for Secondary Navigation -->
+        <div class="relative" id="mainNavMoreWrapper">
+          <button onclick="app.toggleMoreMenu(event)" class="nav-link px-3 py-1.5 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] transition-colors flex items-center gap-1 font-medium whitespace-nowrap" id="mainNavMoreBtn" aria-haspopup="true" aria-expanded="false">
+            <span>More</span>
+            <i data-feather="chevron-down" class="w-3.5 h-3.5"></i>
+          </button>
+          <div id="mainNavMoreDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-[#E1E7F2] shadow-2xl z-50 p-2 space-y-1">
+            <button onclick="app.navigate('ai-insights'); app.closeMoreMenu();" class="w-full text-left px-3 py-2 rounded-xl text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2" data-view="ai-insights">
+              <i data-feather="cpu" class="w-4 h-4 text-[#8755E8]"></i>
+              <span>AI Insights</span>
+            </button>
+            <button onclick="app.navigate('wellbeing'); app.closeMoreMenu();" class="w-full text-left px-3 py-2 rounded-xl text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2" data-view="wellbeing">
+              <i data-feather="heart" class="w-4 h-4 text-[#8755E8]"></i>
+              <span>Family & Wellbeing</span>
+            </button>
+            <button onclick="app.navigate('qa'); app.closeMoreMenu();" class="w-full text-left px-3 py-2 rounded-xl text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2" data-view="qa">
+              <i data-feather="message-circle" class="w-4 h-4 text-[#059669]"></i>
+              <span>Campus Q&A</span>
+            </button>
+            <button onclick="app.navigate('parent'); app.closeMoreMenu();" id="navParentBtn" class="w-full text-left px-3 py-2 rounded-xl text-[#059669] hover:bg-[#ECFDF5] text-xs font-semibold flex items-center gap-2" data-view="parent">
+              <i data-feather="shield" class="w-4 h-4 text-[#059669]"></i>
+              <span>Parent Portal</span>
+            </button>
+            <button onclick="app.navigate('faculty'); app.closeMoreMenu();" id="navFacultyBtn" class="hidden w-full text-left px-3 py-2 rounded-xl text-[#8755E8] hover:bg-[#F6F0FF] text-xs font-semibold items-center gap-2" data-view="faculty">
+              <i data-feather="award" class="w-4 h-4 text-[#8755E8]"></i>
+              <span>Faculty Hub</span>
+            </button>
+          </div>
+        </div>
       </nav>
 
       <!-- Right User Controls & Privacy Center -->
-      <div class="flex items-center gap-2 sm:gap-3">
-        <button onclick="app.navigate('privacy')" class="p-2 text-[#64708A] hover:text-[#2855D9] hover:bg-[#F3F6FF] rounded-xl transition-colors border border-transparent hover:border-[#E1E7F2]" title="Consent & Privacy Center">
+      <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <button onclick="app.navigate('privacy')" class="hidden xs:block p-1.5 sm:p-2 text-[#64708A] hover:text-[#2855D9] hover:bg-[#F3F6FF] rounded-xl transition-colors border border-transparent hover:border-[#E1E7F2]" title="Consent & Privacy Center">
           <i data-feather="shield" class="w-5 h-5"></i>
         </button>
 
         <!-- Current User Avatar / Role Pill -->
-        <div id="userProfilePill" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white border border-[#E1E7F2] shadow-2xs">
+        <div id="userProfilePill" class="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 rounded-xl bg-white border border-[#E1E7F2] shadow-2xs">
           <img id="userAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" class="w-7 h-7 rounded-full object-cover border border-[#2855D9]/30" alt="Avatar">
           <div class="hidden sm:block text-left text-xs leading-tight">
             <div id="userName" class="font-bold text-[#17213B]">Alex Rivera</div>
@@ -106,7 +131,7 @@
         </div>
 
         <!-- Mobile Navigation Hamburger Button -->
-        <button id="mobileNavToggleBtn" onclick="app.toggleMobileMenu()" class="md:hidden p-2 text-[#64708A] hover:text-[#2855D9] hover:bg-[#F3F6FF] rounded-xl transition-colors border border-[#E1E7F2]" aria-label="Toggle navigation">
+        <button id="mobileNavToggleBtn" onclick="app.toggleMobileMenu()" class="lg:hidden p-1.5 sm:p-2 text-[#64708A] hover:text-[#2855D9] hover:bg-[#F3F6FF] rounded-xl transition-colors border border-[#E1E7F2]" aria-label="Toggle navigation">
           <i data-feather="menu" class="w-5 h-5"></i>
         </button>
       </div>
@@ -114,7 +139,7 @@
     </div>
 
     <!-- Mobile Collapsible Menu Drawer -->
-    <div id="mobileNavDrawer" class="hidden md:hidden border-t border-[#E1E7F2] bg-white px-4 py-3 space-y-1 shadow-xl">
+    <div id="mobileNavDrawer" class="hidden lg:hidden border-t border-[#E1E7F2] bg-white px-4 py-3 space-y-1 shadow-xl">
       <button onclick="app.navigate('landing'); app.closeMobileMenu();" class="w-full text-left px-3 py-2 rounded-lg text-[#64708A] hover:text-[#17213B] hover:bg-[#F3F6FF] text-xs font-semibold flex items-center gap-2">
         <i data-feather="home" class="w-4 h-4 text-[#2855D9]"></i>
         <span>Home</span>

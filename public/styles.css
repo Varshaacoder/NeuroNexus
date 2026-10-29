@@ -194,35 +194,8 @@ body {
 }
 
 /* ============================================================
-   GUARANTEED HORIZONTAL MENU BAR & RESPONSIVE NAVIGATION
+   RESPONSIVE NAVIGATION SYSTEM
    ============================================================ */
-header .max-w-7xl,
-header .max-w-screen-2xl {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-}
-
-header nav#mainNav,
-nav#mainNav,
-.main-nav-bar {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 0.35rem !important;
-  white-space: nowrap !important;
-}
-
-header nav#mainNav .nav-link,
-nav#mainNav .nav-link,
 .nav-link {
-  display: inline-flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
+  white-space: nowrap;
 }

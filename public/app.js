@@ -128,6 +128,22 @@ class NeuronexusApp {
     }
   }
 
+  toggleMoreMenu(e) {
+    if (e) e.stopPropagation();
+    const dropdown = document.getElementById("mainNavMoreDropdown");
+    if (dropdown) {
+      dropdown.classList.toggle("hidden");
+    }
+    if (window.feather) feather.replace();
+  }
+
+  closeMoreMenu() {
+    const dropdown = document.getElementById("mainNavMoreDropdown");
+    if (dropdown) {
+      dropdown.classList.add("hidden");
+    }
+  }
+
   setCurrentUser(user) {
     this.currentUser = user;
     const nameEl = document.getElementById("userName");
@@ -1357,3 +1373,18 @@ class NeuronexusApp {
 
 // Global Application Instance
 const app = new NeuronexusApp();
+
+// Close dropdowns on outside click or escape
+document.addEventListener('click', (e) => {
+  const moreWrapper = document.getElementById("mainNavMoreWrapper");
+  if (moreWrapper && !moreWrapper.contains(e.target)) {
+    app.closeMoreMenu();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    app.closeMoreMenu();
+    app.closeMobileMenu();
+  }
+});

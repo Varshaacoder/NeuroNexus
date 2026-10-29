@@ -10,17 +10,18 @@ import { PRESET_USERS, AVAILABLE_COURSES, COMMUNITY_POSTS, RANK_LEADERBOARD } fr
 import { isDemoUser } from '../utils/neuroSessionStore';
 import { eegService } from '../services/eegService';
 
-interface NavbarProps {
-  currentUser: UserProfile;
-  onLogout: () => void;
-  onSwitchUser: (userKey: string) => void;
-  onOpenNotifications: () => void;
-  unreadCount: number;
+export interface NavbarProps {
+  currentUser?: UserProfile | null;
+  onLogout?: () => void;
+  onSwitchUser?: (userKey: string) => void;
+  onOpenNotifications?: () => void;
+  unreadCount?: number;
   currentPage: AppPage;
   onNavigate: (page: AppPage) => void;
-  unreadMessages: number;
-  onOpenTimer: () => void;
+  unreadMessages?: number;
+  onOpenTimer?: () => void;
   onOpenHardwareManager?: () => void;
+  onOpenAuth?: (mode?: 'login' | 'register') => void;
 }
 
 type SearchResult = {
@@ -38,58 +39,64 @@ interface NavItemDef {
   accent?: string;
 }
 
-// ── PRIMARY NAVIGATION (Always directly accessible on desktop) ──────────────
-const PRIMARY_NAV: NavItemDef[] = [
-  { label: 'Home', page: 'landing', icon: Compass, description: 'Product landing page and platform overview', accent: 'text-[#2855D9]' },
-  { label: 'Dashboard', page: 'dashboard', icon: Home, description: 'Personal study overview and analytics' },
-  { label: 'Courses', page: 'courses', icon: BookOpen, description: 'Academic curriculum and course modules' },
-  { label: 'Tests', page: 'tests', icon: FileCheck2, description: 'Diagnostic mock tests and benchmarks' },
-  { label: 'Neuro Analysis', page: 'neuro-analysis', icon: Brain, description: 'Cognitive workload and focus dynamics', accent: 'text-[#00AFC1]' },
+// ── NAVIGATION DEFINITIONS ──────────────────────────────────────────────────
+
+// Core items
+const NAV_HOME: NavItemDef = { label: 'Home', page: 'landing', icon: Compass, description: 'Product overview & landing', accent: 'text-[#2855D9]' };
+const NAV_DASHBOARD: NavItemDef = { label: 'Dashboard', page: 'dashboard', icon: Home, description: 'Personal study overview & analytics' };
+const NAV_COURSES: NavItemDef = { label: 'Courses', page: 'courses', icon: BookOpen, description: 'Academic curriculum & playlists' };
+const NAV_AI_CLASSROOM: NavItemDef = { label: 'AI Classroom', page: 'ai-classroom', icon: Bot, description: 'Interactive AI tutor & whiteboard', accent: 'text-[#8755E8]' };
+const NAV_NEURO: NavItemDef = { label: 'Neuro Analysis', page: 'neuro-analysis', icon: Brain, description: 'EEG dynamics & cognitive focus', accent: 'text-[#00AFC1]' };
+const NAV_CAMPUS_QA: NavItemDef = { label: 'Campus Q&A', page: 'community', icon: MessageSquare, description: 'Peer discussions, Q&A forum & faculty notes', accent: 'text-emerald-600' };
+
+// Secondary items in 'More' dropdown
+const NAV_TESTS: NavItemDef = { label: 'Tests', page: 'tests', icon: FileCheck2, description: 'Diagnostic mock tests & benchmark scores' };
+const NAV_WELLBEING: NavItemDef = { label: 'Student Wellbeing', page: 'wellbeing', icon: Heart, description: 'Cognitive rest rituals & family check-in', accent: 'text-[#8755E8]' };
+const NAV_PARENT_PORTAL: NavItemDef = { label: 'Parent Portal', page: 'parent-portal', icon: ShieldCheck, description: 'Authorized student summary & family consent', accent: 'text-[#059669]' };
+const NAV_HARDWARE_RIG: NavItemDef = { label: 'Hardware Rig', page: 'hardware-integration', icon: Cpu, description: 'Live BioAmp EEG signal stream & diagnostics', accent: 'text-[#00AFC1]' };
+const NAV_LEADERBOARD: NavItemDef = { label: 'Leaderboard', page: 'leaderboard', icon: Trophy, description: 'Academic ranks, XP & milestone badges', accent: 'text-amber-600' };
+const NAV_MESSAGES: NavItemDef = { label: 'Messages', page: 'messages', icon: Users, description: 'Faculty, mentor & advisor direct messages', accent: 'text-blue-600' };
+
+// Role-specific definitions
+const PARENT_DIRECT_NAV: NavItemDef[] = [
+  { label: 'Parent Portal', page: 'parent-portal', icon: ShieldCheck, description: 'Guardian academic & attendance records', accent: 'text-[#059669]' },
+  { label: 'Student Wellbeing', page: 'wellbeing', icon: Heart, description: 'Emotional check-ins & study welfare', accent: 'text-[#8755E8]' },
+  { label: 'Courses', page: 'courses', icon: BookOpen, description: 'Curriculum & lesson playlists' },
+  { label: 'Overview', page: 'landing', icon: Compass, description: 'Platform overview', accent: 'text-[#2855D9]' },
 ];
 
-// ── SECONDARY NAVIGATION (Seamlessly available via 'More' on standard screens) ──
-const SECONDARY_NAV: NavItemDef[] = [
-  { label: 'Parent Portal', page: 'parent-portal', icon: ShieldCheck, description: 'Authorized student summary and family support', accent: 'text-[#059669]' },
-  { label: 'Student Wellbeing', page: 'wellbeing', icon: Heart, description: 'Cognitive rest rituals and voluntary family check-in', accent: 'text-[#8755E8]' },
-  { label: 'Hardware Rig', page: 'hardware-integration', icon: Cpu, description: 'Live EEG signal stream and hardware adapter', accent: 'text-[#00AFC1]' },
-  { label: 'AI Classroom', page: 'ai-classroom', icon: Bot, description: 'Interactive Socratic tutor and whiteboard', accent: 'text-[#8755E8]' },
-  { label: 'Community', page: 'community', icon: Users, description: 'Peer Q&A, faculty announcements and notes', accent: 'text-emerald-600' },
-  { label: 'Leaderboard', page: 'leaderboard', icon: Trophy, description: 'Academic ranks, XP, and badges', accent: 'text-amber-600' },
-  { label: 'Messages', page: 'messages', icon: MessageSquare, description: 'Faculty and mentor direct messaging', accent: 'text-blue-600' },
+const PARENT_MORE_NAV: NavItemDef[] = [
+  { label: 'Messages', page: 'messages', icon: Users, description: 'Advising & faculty messages', accent: 'text-blue-600' },
+  { label: 'Campus Q&A', page: 'community', icon: MessageSquare, description: 'Campus discussions & forum', accent: 'text-emerald-600' },
+  { label: 'Neuro Analysis', page: 'neuro-analysis', icon: Brain, description: 'EEG cognitive summary', accent: 'text-[#00AFC1]' },
 ];
 
-// ── PARENT / GUARDIAN NAVIGATION ────────────────────────────────────────────
-const PARENT_PRIMARY_NAV: NavItemDef[] = [
-  { label: 'Parent Dashboard', page: 'parent-portal', icon: ShieldCheck, description: 'Academic records & guardian overview', accent: 'text-[#059669]' },
-  { label: 'Student Wellbeing', page: 'wellbeing', icon: Heart, description: 'Emotional check-ins and voluntary family sharing', accent: 'text-[#8755E8]' },
-  { label: 'Courses & Curriculum', page: 'courses', icon: BookOpen, description: 'Syllabus, modules, and video lectures' },
-  { label: 'Platform Overview', page: 'landing', icon: Compass, description: 'Platform overview and mission', accent: 'text-[#2855D9]' },
+const FACULTY_DIRECT_NAV: NavItemDef[] = [
+  { label: 'Faculty Hub', page: 'faculty', icon: GraduationCap, description: 'Curriculum analytics & student performance', accent: 'text-[#8755E8]' },
+  { label: 'Courses', page: 'courses', icon: BookOpen, description: 'Course management & lesson playlists' },
+  { label: 'Tests', page: 'tests', icon: FileCheck2, description: 'Assessment results & mock quizzes' },
+  { label: 'Neuro Analysis', page: 'neuro-analysis', icon: Brain, description: 'Department cognitive dynamics', accent: 'text-[#00AFC1]' },
 ];
 
-const PARENT_SECONDARY_NAV: NavItemDef[] = [
-  { label: 'Direct Messages', page: 'messages', icon: MessageSquare, description: 'Faculty advising requests and messages', accent: 'text-blue-600' },
-  { label: 'Campus Community', page: 'community', icon: Users, description: 'Announcements and peer forum', accent: 'text-emerald-600' },
-];
-
-// ── FACULTY MENTOR NAVIGATION ───────────────────────────────────────────────
-const FACULTY_PRIMARY_NAV: NavItemDef[] = [
-  { label: 'Faculty Hub', page: 'faculty', icon: GraduationCap, description: 'Curriculum analytics and course performance', accent: 'text-[#8755E8]' },
-  { label: 'Courses', page: 'courses', icon: BookOpen, description: 'Course management and lesson playlists' },
-  { label: 'Tests & Benchmarks', page: 'tests', icon: FileCheck2, description: 'Assessment results and diagnostic quizzes' },
-  { label: 'Neuro Analysis', page: 'neuro-analysis', icon: Brain, description: 'Cognitive workload metrics', accent: 'text-[#00AFC1]' },
-];
-
-const FACULTY_SECONDARY_NAV: NavItemDef[] = [
-  { label: 'Direct Messages', page: 'messages', icon: MessageSquare, description: 'Student advising and communication', accent: 'text-blue-600' },
-  { label: 'Campus Community', page: 'community', icon: Users, description: 'Academic discussion forum', accent: 'text-emerald-600' },
-  { label: 'Leaderboard', page: 'leaderboard', icon: Trophy, description: 'Department ranks and progress' },
-  { label: 'Platform Overview', page: 'landing', icon: Compass, description: 'Home view', accent: 'text-[#2855D9]' },
+const FACULTY_MORE_NAV: NavItemDef[] = [
+  { label: 'Campus Q&A', page: 'community', icon: MessageSquare, description: 'Student academic forum', accent: 'text-emerald-600' },
+  { label: 'Direct Messages', page: 'messages', icon: Users, description: 'Student advising communication', accent: 'text-blue-600' },
+  { label: 'Leaderboard', page: 'leaderboard', icon: Trophy, description: 'Department ranks & XP' },
+  { label: 'Platform Overview', page: 'landing', icon: Compass, description: 'Platform overview', accent: 'text-[#2855D9]' },
 ];
 
 export const Navbar: React.FC<NavbarProps> = ({
-  currentUser, onLogout, onSwitchUser, onOpenNotifications,
-  unreadCount, currentPage, onNavigate, unreadMessages, onOpenTimer,
+  currentUser,
+  onLogout,
+  onSwitchUser,
+  onOpenNotifications,
+  unreadCount = 0,
+  currentPage,
+  onNavigate,
+  unreadMessages = 0,
+  onOpenTimer,
   onOpenHardwareManager,
+  onOpenAuth,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -147,7 +154,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     const q = query.toLowerCase();
     const results: SearchResult[] = [];
 
-    // Search courses
     AVAILABLE_COURSES.forEach(c => {
       if (c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q) || c.description.toLowerCase().includes(q)) {
         results.push({
@@ -159,7 +165,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       }
     });
 
-    // Search community posts
     COMMUNITY_POSTS.forEach(p => {
       if (p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q) || p.topic.toLowerCase().includes(q)) {
         results.push({
@@ -171,7 +176,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       }
     });
 
-    // Search leaderboard names
     RANK_LEADERBOARD.forEach(r => {
       if (r.name.toLowerCase().includes(q)) {
         results.push({
@@ -197,49 +201,76 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  // Role-aware primary and secondary navigation
-  const primaryNav = currentUser.role === 'Parent/Guardian'
-    ? PARENT_PRIMARY_NAV
-    : currentUser.role === 'Faculty Mentor'
-    ? FACULTY_PRIMARY_NAV
-    : PRIMARY_NAV;
+  const isParent = currentUser?.role === 'Parent/Guardian';
+  const isFaculty = currentUser?.role === 'Faculty Mentor';
 
-  const secondaryNav = currentUser.role === 'Parent/Guardian'
-    ? PARENT_SECONDARY_NAV
-    : currentUser.role === 'Faculty Mentor'
-    ? FACULTY_SECONDARY_NAV
-    : SECONDARY_NAV;
+  // Direct items shown in main navbar based on role
+  const directNavItems: NavItemDef[] = isParent
+    ? PARENT_DIRECT_NAV
+    : isFaculty
+    ? FACULTY_DIRECT_NAV
+    : [
+        NAV_HOME,
+        NAV_DASHBOARD,
+        NAV_COURSES,
+        NAV_AI_CLASSROOM,
+        // NAV_NEURO shown via xl:inline-flex
+        NAV_NEURO,
+        // NAV_CAMPUS_QA shown via 2xl:inline-flex
+        NAV_CAMPUS_QA,
+      ];
 
-  // Check if current page is inside the Secondary/More menu
-  const activeSecondaryItem = secondaryNav.find(item => item.page === currentPage);
-  const isSecondaryActive = Boolean(activeSecondaryItem);
+  // Secondary items in 'More' dropdown
+  const moreNavItems: NavItemDef[] = isParent
+    ? PARENT_MORE_NAV
+    : isFaculty
+    ? FACULTY_MORE_NAV
+    : [
+        // Included for < xl screens where NAV_NEURO is hidden in direct bar
+        NAV_NEURO,
+        // Included for < 2xl screens where NAV_CAMPUS_QA is hidden in direct bar
+        NAV_CAMPUS_QA,
+        NAV_TESTS,
+        NAV_WELLBEING,
+        NAV_PARENT_PORTAL,
+        NAV_HARDWARE_RIG,
+        NAV_LEADERBOARD,
+        NAV_MESSAGES,
+      ];
 
-  const homePageDestination = currentUser.role === 'Parent/Guardian'
+  // Check if current page is inside 'More' menu
+  const activeMoreItem = moreNavItems.find(item => item.page === currentPage);
+  const isMoreActive = Boolean(activeMoreItem);
+
+  const homeDestination: AppPage = isParent
     ? 'parent-portal'
-    : currentUser.role === 'Faculty Mentor'
+    : isFaculty
     ? 'faculty'
-    : 'dashboard';
+    : currentUser
+    ? 'dashboard'
+    : 'landing';
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-xs">
-      <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 h-16 flex flex-row flex-nowrap items-center justify-between gap-2 lg:gap-3 xl:gap-4">
+      {/* ── 3-COLUMN RESPONSIVE GRID (Left Brand, Center Nav, Right Actions) ── */}
+      <div className="w-full max-w-[1840px] mx-auto px-2 sm:px-4 lg:px-6 h-16 grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-3 lg:gap-4">
         
-        {/* ── 1. LOGO & BRANDING ────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* ── 1. LEFT REGION: LOGO & BRANDING ───────────────────────────────── */}
+        <div className="flex items-center gap-2 shrink-0 justify-self-start">
           <button
-            onClick={() => onNavigate(homePageDestination)}
-            className="flex items-center gap-2 sm:gap-2.5 group text-left focus:outline-none focus:ring-2 focus:ring-indigo-400/40 rounded-xl p-1 -m-1"
-            title={`NeuroNexus ${currentUser.role === 'Parent/Guardian' ? 'Parent Portal' : 'Dashboard'}`}
+            onClick={() => onNavigate(homeDestination)}
+            className="flex items-center gap-2 group text-left focus:outline-none focus:ring-2 focus:ring-indigo-400/40 rounded-xl p-1 -m-1"
+            title="Neuronexus — Home"
           >
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 flex items-center justify-center shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform shrink-0">
-              <Brain className="w-5 h-5 text-white" />
+            <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-800 flex items-center justify-center shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform shrink-0">
+              <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-black text-lg sm:text-xl text-slate-900 tracking-tight">
+              <span className="font-black text-base sm:text-lg lg:text-xl text-slate-900 tracking-tight whitespace-nowrap">
                 Neuro<span className="text-indigo-600">Nexus</span>
               </span>
-              {isDemoUser(currentUser.id, currentUser.email) && currentPage !== 'parent-portal' && currentUser.role !== 'Parent/Guardian' && (
-                <span className="hidden 2xl:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+              {currentUser && isDemoUser(currentUser.id, currentUser.email) && currentPage !== 'parent-portal' && currentUser.role !== 'Parent/Guardian' && (
+                <span className="hidden 2xl:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap">
                   DEMO MODE
                 </span>
               )}
@@ -247,154 +278,144 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
         </div>
 
-        {/* ── 2. DESKTOP RESPONSIVE NAVIGATION (Single Horizontal Row) ────── */}
-        <nav className="hidden lg:flex flex-row flex-nowrap items-center gap-1 xl:gap-1.5 shrink min-w-0" aria-label="Main Navigation">
-          {/* Primary Navigation Items */}
-          {primaryNav.map((item) => {
+        {/* ── 2. CENTER REGION: MAIN NAVIGATION LINKS (Responsive Tiered) ── */}
+        <nav
+          className="hidden lg:flex items-center justify-center gap-1 xl:gap-1.5 min-w-0 justify-self-center overflow-hidden"
+          aria-label="Main Navigation"
+        >
+          {/* Direct Core Navigation Items */}
+          {directNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.page;
+
+            let responsiveClass = 'inline-flex';
+            if (!isParent && !isFaculty) {
+              if (item.page === 'neuro-analysis') {
+                responsiveClass = 'hidden xl:inline-flex';
+              } else if (item.page === 'community') {
+                responsiveClass = 'hidden 2xl:inline-flex';
+              }
+            }
+
             return (
               <button
                 key={item.page}
                 onClick={() => onNavigate(item.page)}
                 title={item.description}
-                className={`flex flex-row flex-nowrap items-center gap-1.5 xl:gap-2 px-2.5 lg:px-3 py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all shrink-0 whitespace-nowrap ${
+                className={`${responsiveClass} items-center gap-1.5 px-2 py-1.5 xl:px-2.5 xl:py-1.5 2xl:px-3 2xl:py-2 rounded-xl text-xs xl:text-xs 2xl:text-sm font-semibold transition-all shrink-0 whitespace-nowrap ${
                   isActive
                     ? 'bg-indigo-50 text-indigo-700 font-bold shadow-2xs border border-indigo-100'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${item.accent && !isActive ? item.accent : ''}`} />
-                <span className="whitespace-nowrap">{item.label}</span>
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${item.accent && !isActive ? item.accent : ''}`} />
+                <span>{item.label}</span>
               </button>
             );
           })}
 
-          {/* Secondary Navigation Items for Wide Screens (>= 1536px) */}
-          {secondaryNav.length > 0 && (
-            <div className="hidden 2xl:flex flex-row flex-nowrap items-center gap-1 xl:gap-1.5 shrink-0">
-              {secondaryNav.map((item) => {
-                const Icon = item.icon;
-                const isActive = currentPage === item.page;
-                return (
-                  <button
-                    key={item.page}
-                    onClick={() => onNavigate(item.page)}
-                    title={item.description}
-                    className={`flex flex-row flex-nowrap items-center gap-1.5 px-2.5 lg:px-3 py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all relative shrink-0 whitespace-nowrap ${
-                      isActive
-                        ? 'bg-indigo-50 text-indigo-700 font-bold shadow-2xs border border-indigo-100'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${item.accent && !isActive ? item.accent : ''}`} />
-                    <span className="whitespace-nowrap">{item.label}</span>
-                    {item.page === 'messages' && unreadMessages > 0 && (
-                      <span className="w-4 h-4 bg-rose-500 rounded-full text-[9px] font-black text-white flex items-center justify-center shrink-0">
-                        {unreadMessages}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* 'More' Overflow Dropdown (Always accessible on desktop) */}
+          <div ref={moreMenuRef} className="relative shrink-0">
+            <button
+              id="desktopMoreNavBtn"
+              onClick={() => setShowMoreMenu(!showMoreMenu)}
+              className={`flex items-center gap-1 px-2 py-1.5 xl:px-2.5 xl:py-1.5 2xl:px-3 2xl:py-2 rounded-xl text-xs xl:text-xs 2xl:text-sm font-semibold transition-all border shrink-0 whitespace-nowrap ${
+                isMoreActive
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold shadow-2xs'
+                  : 'text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+              }`}
+              aria-expanded={showMoreMenu}
+              aria-haspopup="true"
+              title="Explore additional modules and tools"
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+              <span>{isMoreActive ? activeMoreItem?.label : 'More'}</span>
+              {unreadMessages > 0 && !isMoreActive && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              )}
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showMoreMenu ? 'rotate-180 text-indigo-600' : 'text-slate-400'}`} />
+            </button>
 
-          {/* 'More' Overflow Dropdown for standard screens (< 1536px) */}
-          {secondaryNav.length > 0 && (
-            <div ref={moreMenuRef} className="relative 2xl:hidden shrink-0">
-              <button
-                onClick={() => setShowMoreMenu(!showMoreMenu)}
-                className={`flex flex-row flex-nowrap items-center gap-1.5 px-2.5 lg:px-3 py-2 rounded-xl text-xs lg:text-sm font-semibold transition-all border shrink-0 whitespace-nowrap ${
-                  isSecondaryActive
-                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold shadow-2xs'
-                    : 'text-slate-600 border-slate-200/80 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-                aria-expanded={showMoreMenu}
-                aria-haspopup="true"
-                title="Explore additional features and community modules"
+            {/* 'More' Menu Flyout Card */}
+            {showMoreMenu && (
+              <div
+                id="desktopMoreNavMenu"
+                className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+                role="menu"
               >
-                <MoreHorizontal className="w-4 h-4" />
-                <span className="whitespace-nowrap">
-                  {isSecondaryActive ? activeSecondaryItem?.label : 'More'}
-                </span>
-                {unreadMessages > 0 && !isSecondaryActive && (
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                )}
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showMoreMenu ? 'rotate-180 text-indigo-600' : 'text-slate-400'}`} />
-              </button>
+                <div className="p-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/50">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-indigo-600" />
+                    Additional Modules & Features
+                  </span>
+                </div>
 
-              {/* 'More' Menu Flyout Card */}
-              {showMoreMenu && (
-                <div
-                  className="absolute left-0 mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
-                  role="menu"
-                >
-                  <div className="p-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/50">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-indigo-600" />
-                      Additional Modules & Features
-                    </span>
-                  </div>
+                <div className="p-2 space-y-1 max-h-96 overflow-y-auto">
+                  {moreNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = currentPage === item.page;
 
-                  <div className="p-2 space-y-1">
-                    {secondaryNav.map((item) => {
-                      const Icon = item.icon;
-                      const isActive = currentPage === item.page;
-                      return (
-                        <button
-                          key={item.page}
-                          onClick={() => {
-                            onNavigate(item.page);
-                            setShowMoreMenu(false);
-                          }}
-                          className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all group ${
-                            isActive
-                              ? 'bg-indigo-50/80 text-indigo-900 border border-indigo-100'
-                              : 'hover:bg-slate-50 text-slate-700'
-                          }`}
-                          role="menuitem"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                              isActive ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 group-hover:bg-slate-200 text-slate-600'
-                            }`}>
-                              <Icon className="w-4 h-4" />
+                    let hideFromDropdownClass = '';
+                    if (!isParent && !isFaculty) {
+                      if (item.page === 'neuro-analysis') {
+                        hideFromDropdownClass = 'xl:hidden';
+                      } else if (item.page === 'community') {
+                        hideFromDropdownClass = '2xl:hidden';
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={item.page}
+                        onClick={() => {
+                          onNavigate(item.page);
+                          setShowMoreMenu(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-all group ${hideFromDropdownClass} ${
+                          isActive
+                            ? 'bg-indigo-50/80 text-indigo-900 border border-indigo-100'
+                            : 'hover:bg-slate-50 text-slate-700 border border-transparent'
+                        }`}
+                        role="menuitem"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                            isActive ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-100 group-hover:bg-slate-200 text-slate-600'
+                          }`}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold truncate">
+                              {item.label}
                             </div>
-                            <div className="min-w-0">
-                              <div className="text-xs font-bold truncate flex items-center gap-1.5">
-                                <span>{item.label}</span>
-                                {item.page === 'ai-classroom' && (
-                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-violet-100 text-violet-700">
-                                    AI
-                                  </span>
-                                )}
-                              </div>
+                            {item.description && (
                               <div className="text-[10px] text-slate-400 truncate mt-0.5">
                                 {item.description}
                               </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            {item.page === 'messages' && unreadMessages > 0 && (
-                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white">
-                                {unreadMessages}
-                              </span>
                             )}
-                            {isActive && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
                           </div>
-                        </button>
-                      );
-                    })}
-
-                    {/* Integrated Utilities in More Menu (for Student) */}
-                    {currentUser.role === 'Student' && (
-                      <div className="pt-2 border-t border-slate-100 mt-2 space-y-1">
-                        <div className="px-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                          Study & Hardware Tools
                         </div>
 
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          {item.page === 'messages' && unreadMessages > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white">
+                              {unreadMessages}
+                            </span>
+                          )}
+                          {isActive && <Check className="w-4 h-4 text-indigo-600 shrink-0" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                  {/* Study & Hardware Shortcuts */}
+                  {currentUser?.role === 'Student' && (
+                    <div className="pt-2 border-t border-slate-100 mt-2 space-y-1">
+                      <div className="px-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        Study & Hardware Tools
+                      </div>
+
+                      {onOpenTimer && (
                         <button
                           onClick={() => {
                             onOpenTimer();
@@ -410,288 +431,287 @@ export const Navbar: React.FC<NavbarProps> = ({
                             <span className="text-[10px] text-slate-400 block">Focus timer with streak counter</span>
                           </div>
                         </button>
+                      )}
 
-                        {onOpenHardwareManager && (
-                          <button
-                            onClick={() => {
-                              onOpenHardwareManager();
-                              setShowMoreMenu(false);
-                            }}
-                            className="w-full flex items-center gap-2.5 p-2 rounded-xl text-left text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-900 transition-colors"
-                          >
-                            <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                              <Cpu className="w-3.5 h-3.5" />
-                            </div>
-                            <div className="min-w-0">
-                              <span className="font-bold">BioAmp Hardware Manager</span>
-                              <span className="text-[10px] text-slate-400 block">
-                                Serial port & bridge diagnostics ({eegState})
-                              </span>
-                            </div>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                      {onOpenHardwareManager && (
+                        <button
+                          onClick={() => {
+                            onOpenHardwareManager();
+                            setShowMoreMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2.5 p-2 rounded-xl text-left text-xs font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-900 transition-colors"
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                            <Cpu className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold">BioAmp Hardware Manager</span>
+                            <span className="text-[10px] text-slate-400 block">Signal bridge & serial port ({eegState})</span>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
-        </nav>
-
-        {/* ── 3. SEARCH (Adaptive inline / expanding input) ─────────────────── */}
-        <div ref={searchRef} className="hidden lg:block relative shrink min-w-0">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onFocus={() => setShowSearch(true)}
-              onChange={(e) => { handleSearch(e.target.value); setShowSearch(true); }}
-              placeholder="Search courses, posts... (Ctrl+K)"
-              className="w-36 xl:w-48 2xl:w-64 focus:w-64 pl-9 pr-7 py-1.5 text-xs lg:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 text-slate-800 placeholder-slate-400 transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => { setSearchQuery(''); setSearchResults([]); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                aria-label="Clear search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              </div>
             )}
           </div>
+        </nav>
 
-          {/* Search Results Dropdown */}
-          {showSearch && searchQuery && (
-            <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden">
-              {searchResults.length > 0 ? (
-                <div>
-                  <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                      {searchResults.length} Matches for "{searchQuery}"
-                    </span>
-                  </div>
-                  {searchResults.map((result, idx) => (
-                    <button
-                      key={idx}
-                      onClick={result.action}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 transition-colors text-left"
-                    >
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0 ${
-                        result.type === 'course' ? 'bg-indigo-500' :
-                        result.type === 'post' ? 'bg-amber-500' :
-                        result.type === 'rank' ? 'bg-emerald-500' : 'bg-slate-500'
-                      }`}>
-                        {result.type === 'course' ? '📚' : result.type === 'post' ? '💬' : result.type === 'rank' ? '🏆' : '👤'}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-slate-900 truncate">{result.title}</div>
-                        <div className="text-[10px] text-slate-500 truncate">{result.subtitle}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="px-4 py-5 text-center text-xs text-slate-400">
-                  No matches found for "{searchQuery}"
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── 4. RIGHT ACTIONS & USER PROFILE ──────────────────────────────── */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        {/* ── 3. RIGHT REGION: SEARCH, USER CONTROLS, AUTH & MOBILE TOGGLE ── */}
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0 justify-self-end">
           
-          {/* Mobile search trigger */}
+          {/* Mobile Search Icon Button (Hidden on < 375px so 320px never overflows) */}
           <button
             onClick={() => setShowMobileSearch(!showMobileSearch)}
-            className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 border border-slate-200 transition-colors"
+            className="hidden xs:flex lg:hidden p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200 transition-colors"
             title="Search courses & community"
             aria-label="Open search"
           >
             <Search className="w-4 h-4" />
           </button>
 
-          {/* Hardware Integration Dashboard Pill */}
-          <button
-            onClick={() => onNavigate('hardware-integration')}
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all shrink-0 ${
-              currentPage === 'hardware-integration'
-                ? 'bg-cyan-600 text-white border-cyan-700 shadow-2xs'
-                : eegState === 'streaming'
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                : eegState === 'connected'
-                ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
-                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-            }`}
-            title={`Hardware Ingestion Rig & Live Signal: ${eegState}`}
-          >
-            <Cpu className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden xl:inline">
-              {currentPage === 'hardware-integration' ? 'Hardware Rig' : eegState === 'streaming' ? 'EEG Live' : eegState === 'connected' ? 'EEG Ready' : 'Hardware Rig'}
-            </span>
-            {eegState === 'streaming' && (
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            )}
-          </button>
-
-          {/* Timer Quick Pill (Wide screens only) */}
-          {currentUser.role === 'Student' && currentUser.streakDays ? (
-            <button
-              onClick={onOpenTimer}
-              className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold hover:bg-amber-100 transition-colors shrink-0"
-              title="Open Pomodoro & Focus Timer"
-            >
-              <Flame className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
-              <span>{currentUser.streakDays}d</span>
-              <span className="text-amber-300">|</span>
-              <Clock className="w-3 h-3" />
-              <span className="hidden 2xl:inline">Timer</span>
-            </button>
-          ) : null}
-
-          {/* AI Classroom Quick Launch Button (Visible on wide desktop) */}
-          {currentUser.role === 'Student' && (
-            <button
-              onClick={() => onNavigate('ai-classroom')}
-              className={`hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all shrink-0 ${
-                currentPage === 'ai-classroom'
-                  ? 'bg-violet-600 text-white border-violet-700 shadow-2xs'
-                  : 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100'
-              }`}
-              title="Launch AI Interactive Classroom"
-            >
-              <Bot className="w-3.5 h-3.5" />
-              <span>AI Classroom</span>
-            </button>
-          )}
-
-          {/* Notifications Bell */}
-          <button
-            onClick={onOpenNotifications}
-            className="relative p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 transition-colors shrink-0"
-            title="System & Academic Notifications"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-rose-500 rounded-full text-[9px] font-black text-white flex items-center justify-center ring-2 ring-white">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-
-          {/* User Profile Dropdown Button */}
-          <div ref={userMenuRef} className="relative shrink-0">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-1.5 sm:gap-2 p-1 sm:px-2 sm:py-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-slate-50 hover:bg-white transition-all"
-              aria-expanded={showUserMenu}
-              aria-haspopup="true"
-              title={`${currentUser.name} (${currentUser.role})`}
-            >
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                className="w-7 h-7 rounded-lg object-cover ring-1 ring-slate-200 shrink-0"
+          {/* Desktop Search Bar */}
+          <div ref={searchRef} className="hidden lg:block relative shrink-0">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onFocus={() => setShowSearch(true)}
+                onChange={(e) => { handleSearch(e.target.value); setShowSearch(true); }}
+                placeholder="Search..."
+                className="w-20 xl:w-28 2xl:w-36 focus:w-44 pl-7 pr-6 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 text-slate-800 placeholder-slate-400 transition-all"
               />
-              <div className="hidden lg:block text-left max-w-[90px] xl:max-w-[110px]">
-                <div className="text-xs font-bold text-slate-800 leading-none truncate">
-                  {currentUser.name.split(' ')[0]}
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate">
-                  {currentUser.role}
-                </div>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            </button>
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
 
-            {/* User Dropdown Menu */}
-            {showUserMenu && (
-              <div
-                className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
-                role="menu"
-              >
-                {/* Current user header */}
-                <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-slate-50">
-                  <div className="flex items-center gap-3">
-                    <img src={currentUser.avatar} alt={currentUser.name} className="w-10 h-10 rounded-xl object-cover ring-2 ring-indigo-200" />
-                    <div className="min-w-0">
-                      <div className="text-sm font-bold text-slate-900 truncate">{currentUser.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{currentUser.email}</div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border mt-1 inline-block ${getRoleColor(currentUser.role)}`}>
-                        {currentUser.role}
+            {/* Desktop Search Results Popover */}
+            {showSearch && searchQuery && (
+              <div className="absolute top-full mt-2 right-0 w-80 bg-white rounded-2xl border border-slate-200 shadow-xl z-50 overflow-hidden">
+                {searchResults.length > 0 ? (
+                  <div>
+                    <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        {searchResults.length} Matches for "{searchQuery}"
                       </span>
                     </div>
+                    {searchResults.map((result, idx) => (
+                      <button
+                        key={idx}
+                        onClick={result.action}
+                        className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0 ${
+                          result.type === 'course' ? 'bg-indigo-500' :
+                          result.type === 'post' ? 'bg-amber-500' :
+                          result.type === 'rank' ? 'bg-emerald-500' : 'bg-slate-500'
+                        }`}>
+                          {result.type === 'course' ? '📚' : result.type === 'post' ? '💬' : result.type === 'rank' ? '🏆' : '👤'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-bold text-slate-900 truncate">{result.title}</div>
+                          <div className="text-[10px] text-slate-500 truncate">{result.subtitle}</div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                </div>
-
-                {/* Switch Persona (Demo & Evaluator Access) */}
-                <div className="p-2">
-                  <div className="px-2 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                    Switch Persona (Evaluator & Demo)
+                ) : (
+                  <div className="px-4 py-5 text-center text-xs text-slate-400">
+                    No matches found for "{searchQuery}"
                   </div>
-                  <div className="space-y-0.5 max-h-56 overflow-y-auto">
-                    {Object.entries(PRESET_USERS).map(([key, user]) => {
-                      const isActive = user.id === currentUser.id;
-                      return (
-                        <button
-                          key={key}
-                          onClick={() => {
-                            onSwitchUser(key);
-                            setShowUserMenu(false);
-                          }}
-                          className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left transition-all ${
-                            isActive ? 'bg-indigo-50 text-indigo-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
-                          }`}
-                          role="menuitem"
-                        >
-                          <img src={user.avatar} alt={user.name} className="w-6 h-6 rounded-lg object-cover shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs truncate">{user.name}</div>
-                            <div className="text-[10px] text-slate-400 truncate">{user.role}{user.rank ? ` • ${user.rank}` : ''}</div>
-                          </div>
-                          {isActive && <div className="w-2 h-2 bg-indigo-500 rounded-full shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Sign Out Action */}
-                <div className="p-2 border-t border-slate-100">
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      onLogout();
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors"
-                    role="menuitem"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Quick Sign Out Button (Visible on wide screens) */}
-          <button
-            onClick={onLogout}
-            className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shrink-0"
-            title="Sign Out of NeuroNexus"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
-          </button>
+          {/* Authenticated User Controls */}
+          {currentUser ? (
+            <>
+              {/* EEG Rig Status Indicator Pill */}
+              <button
+                onClick={() => onNavigate('hardware-integration')}
+                className={`hidden xl:flex items-center gap-1.5 px-2 py-1.5 rounded-xl border text-xs font-bold transition-all shrink-0 ${
+                  currentPage === 'hardware-integration'
+                    ? 'bg-cyan-600 text-white border-cyan-700 shadow-2xs'
+                    : eegState === 'streaming'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    : eegState === 'connected'
+                    ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+                title={`Hardware Ingestion Rig: ${eegState}`}
+              >
+                <Cpu className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  {currentPage === 'hardware-integration' ? 'Hardware Rig' : eegState === 'streaming' ? 'Live' : 'Hardware'}
+                </span>
+                {eegState === 'streaming' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                )}
+              </button>
 
-          {/* Mobile Hamburger Button (Tablets & Mobile: < lg) */}
+              {/* Notifications Bell (Hidden on < 375px so 320px never overflows) */}
+              {onOpenNotifications && (
+                <button
+                  onClick={onOpenNotifications}
+                  className="hidden xs:flex relative p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 transition-colors shrink-0"
+                  title="System & Academic Notifications"
+                  aria-label="Notifications"
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full text-[9px] font-black text-white flex items-center justify-center ring-2 ring-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
+
+              {/* User Profile Button with Dropdown */}
+              <div ref={userMenuRef} className="relative shrink-0">
+                <button
+                  id="userProfileMenuBtn"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-1.5 p-1 sm:px-2 sm:py-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-slate-50 hover:bg-white transition-all shrink-0"
+                  aria-expanded={showUserMenu}
+                  aria-haspopup="true"
+                  title={`${currentUser.name} (${currentUser.role})`}
+                >
+                  <img
+                    src={currentUser.avatar}
+                    alt={currentUser.name}
+                    className="w-7 h-7 rounded-lg object-cover ring-1 ring-slate-200 shrink-0"
+                  />
+                  <div className="hidden lg:block text-left max-w-[70px] xl:max-w-[85px]">
+                    <div className="text-xs font-bold text-slate-800 leading-none truncate">
+                      {currentUser.name.split(' ')[0]}
+                    </div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                      {currentUser.role}
+                    </div>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                </button>
+
+                {/* User Dropdown Menu Card */}
+                {showUserMenu && (
+                  <div
+                    id="userDropdownMenu"
+                    className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+                    role="menu"
+                  >
+                    {/* Header */}
+                    <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-slate-50">
+                      <div className="flex items-center gap-3">
+                        <img src={currentUser.avatar} alt={currentUser.name} className="w-10 h-10 rounded-xl object-cover ring-2 ring-indigo-200" />
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-slate-900 truncate">{currentUser.name}</div>
+                          <div className="text-xs text-slate-500 truncate">{currentUser.email}</div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border mt-1 inline-block ${getRoleColor(currentUser.role)}`}>
+                            {currentUser.role}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Evaluator & Demo Persona Switcher */}
+                    {onSwitchUser && (
+                      <div className="p-2">
+                        <div className="px-2 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                          Switch Persona (Evaluator & Demo)
+                        </div>
+                        <div className="space-y-0.5 max-h-52 overflow-y-auto">
+                          {Object.entries(PRESET_USERS).map(([key, user]) => {
+                            const isActive = user.id === currentUser.id;
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => {
+                                  onSwitchUser(key);
+                                  setShowUserMenu(false);
+                                }}
+                                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-left transition-all ${
+                                  isActive ? 'bg-indigo-50 text-indigo-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                                }`}
+                                role="menuitem"
+                              >
+                                <img src={user.avatar} alt={user.name} className="w-6 h-6 rounded-lg object-cover shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs truncate">{user.name}</div>
+                                  <div className="text-[10px] text-slate-400 truncate">{user.role}{user.rank ? ` • ${user.rank}` : ''}</div>
+                                </div>
+                                {isActive && <div className="w-2 h-2 bg-indigo-500 rounded-full shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sign Out Action inside menu */}
+                    {onLogout && (
+                      <div className="p-2 border-t border-slate-100">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            onLogout();
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors"
+                          role="menuitem"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Direct Sign Out Button (Ultra-wide screens >= 1536px only) */}
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-all shrink-0"
+                  title="Sign Out of NeuroNexus"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+              )}
+            </>
+          ) : (
+            /* Guest / Unauthenticated Controls: Sign In & Get Started */
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <button
+                onClick={() => onOpenAuth ? onOpenAuth('login') : onNavigate('landing')}
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200 transition-colors shrink-0"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => onOpenAuth ? onOpenAuth('register') : onNavigate('dashboard')}
+                className="px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-xs transition-all shrink-0"
+              >
+                Get Started
+              </button>
+            </div>
+          )}
+
+          {/* Mobile Hamburger Toggle Button (Tablets & Phones: < lg) */}
           <button
+            id="mobileNavToggleBtn"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-colors"
+            className="lg:hidden p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 transition-colors"
             aria-label="Toggle navigation menu"
             aria-expanded={showMobileMenu}
           >
@@ -700,16 +720,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* ── 5. MOBILE SEARCH OVERLAY (Appears when mobile search icon is tapped) ── */}
+      {/* ── 4. MOBILE SEARCH OVERLAY ────────────────────────────────────────── */}
       {showMobileSearch && (
-        <div className="lg:hidden px-4 py-2 bg-slate-50 border-t border-slate-200">
+        <div className="lg:hidden px-4 py-2.5 bg-slate-50 border-t border-slate-200 animate-in fade-in duration-150">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search courses, posts, topics..."
+              placeholder="Search courses, topics, community..."
               className="w-full pl-9 pr-8 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400/30 text-slate-800"
               autoFocus
             />
@@ -723,37 +743,58 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       )}
 
-      {/* ── 6. COMPACT MOBILE MENU (Phone & tablet: < lg) ──────────────────── */}
+      {/* ── 5. RESPONSIVE MOBILE MENU DRAWER (< lg: 320px, 375px, 430px, 768px) ── */}
       {showMobileMenu && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-4 max-h-[85vh] overflow-y-auto shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
-          {/* Active User Card */}
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <img src={currentUser.avatar} alt={currentUser.name} className="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200" />
-              <div className="min-w-0">
-                <div className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</div>
-                <div className="text-[10px] text-slate-500 truncate">{currentUser.email}</div>
+        <div id="mobileNavDrawer" className="lg:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-4 max-h-[85vh] overflow-y-auto shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+          
+          {/* User Header Card (or Guest Banner) */}
+          {currentUser ? (
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img src={currentUser.avatar} alt={currentUser.name} className="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</div>
+                  <div className="text-[10px] text-slate-500 truncate">{currentUser.email}</div>
+                </div>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${getRoleColor(currentUser.role)}`}>
+                {currentUser.role}
+              </span>
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-between gap-2">
+              <div className="text-xs text-indigo-900 font-semibold">Welcome to NeuroNexus</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setShowMobileMenu(false); onOpenAuth && onOpenAuth('login'); }}
+                  className="px-3 py-1 bg-white text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => { setShowMobileMenu(false); onOpenAuth && onOpenAuth('register'); }}
+                  className="px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-lg"
+                >
+                  Get Started
+                </button>
               </div>
             </div>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border shrink-0 ${getRoleColor(currentUser.role)}`}>
-              {currentUser.role}
-            </span>
-          </div>
+          )}
 
-          {/* Core Modules for this Role */}
+          {/* Section 1: Core Navigation */}
           <div>
             <div className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
-              {currentUser.role === 'Parent/Guardian' ? 'Guardian Portal' : currentUser.role === 'Faculty Mentor' ? 'Faculty Portal' : 'Academic Core'}
+              {isParent ? 'Guardian Portal' : isFaculty ? 'Faculty Hub' : 'Core Modules'}
             </div>
             <div className="space-y-1">
-              {primaryNav.map((item) => {
+              {directNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = currentPage === item.page;
                 return (
                   <button
                     key={item.page}
                     onClick={() => { onNavigate(item.page); setShowMobileMenu(false); }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
                         ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-2xs'
                         : 'text-slate-700 hover:bg-slate-50 border border-transparent'
@@ -770,61 +811,62 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Secondary Modules & Collaboration */}
-          {secondaryNav.length > 0 && (
-            <div>
-              <div className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
-                Collaboration & Modules
-              </div>
-              <div className="space-y-1">
-                {secondaryNav.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentPage === item.page;
-                  return (
-                    <button
-                      key={item.page}
-                      onClick={() => { onNavigate(item.page); setShowMobileMenu(false); }}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                        isActive
-                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-2xs'
-                          : 'text-slate-700 hover:bg-slate-50 border border-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className={`w-4 h-4 ${item.accent || 'text-slate-600'}`} />
-                        <span>{item.label}</span>
-                      </div>
-                      {item.page === 'messages' && unreadMessages > 0 && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white">
-                          {unreadMessages}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Section 2: Extended Modules */}
+          <div>
+            <div className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+              Collaboration & Advanced Tools
             </div>
-          )}
+            <div className="space-y-1">
+              {moreNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentPage === item.page;
+                return (
+                  <button
+                    key={item.page}
+                    onClick={() => { onNavigate(item.page); setShowMobileMenu(false); }}
+                    className={`w-full min-h-[44px] flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-2xs'
+                        : 'text-slate-700 hover:bg-slate-50 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className={`w-4 h-4 ${item.accent || 'text-slate-600'}`} />
+                      <span>{item.label}</span>
+                    </div>
+                    {item.page === 'messages' && unreadMessages > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white">
+                        {unreadMessages}
+                      </span>
+                    )}
+                    {isActive && <Check className="w-4 h-4 text-indigo-600" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-          {/* Quick Tools (if Student) */}
-          {currentUser.role === 'Student' && (
+          {/* Section 3: Study Tools (Pomodoro & Hardware) */}
+          {currentUser?.role === 'Student' && (
             <div className="pt-2 border-t border-slate-100">
               <div className="px-1 text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
                 Quick Tools
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => { onOpenTimer(); setShowMobileMenu(false); }}
-                  className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold"
-                >
-                  <Clock className="w-4 h-4 text-amber-600" />
-                  <span>Timer ({currentUser.streakDays || 0}d)</span>
-                </button>
+                {onOpenTimer && (
+                  <button
+                    onClick={() => { onOpenTimer(); setShowMobileMenu(false); }}
+                    className="min-h-[44px] flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 text-xs font-bold"
+                  >
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <span>Timer ({currentUser.streakDays || 0}d)</span>
+                  </button>
+                )}
 
                 {onOpenHardwareManager && (
                   <button
                     onClick={() => { onOpenHardwareManager(); setShowMobileMenu(false); }}
-                    className="flex items-center gap-2 p-2.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 text-xs font-bold"
+                    className="min-h-[44px] flex items-center gap-2 p-2.5 rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 text-xs font-bold"
                   >
                     <Cpu className="w-4 h-4 text-indigo-600" />
                     <span>BioAmp ({eegState})</span>
@@ -834,16 +876,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          {/* Sign Out */}
-          <div className="pt-2 border-t border-slate-100">
-            <button
-              onClick={() => { onLogout(); setShowMobileMenu(false); }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
-          </div>
+          {/* Section 4: Sign Out */}
+          {currentUser && onLogout && (
+            <div className="pt-2 border-t border-slate-100">
+              <button
+                onClick={() => { onLogout(); setShowMobileMenu(false); }}
+                className="w-full min-h-[44px] flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>

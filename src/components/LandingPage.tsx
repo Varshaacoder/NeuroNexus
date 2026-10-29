@@ -87,40 +87,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
     <div className="min-h-screen bg-white text-[#17213B] flex flex-col font-sans">
       
       {/* ── TOP DEMO BAR ─────────────────────────────────────────────────────── */}
-      <div className="bg-[#F3F6FF] border-b border-[#E1E7F2] py-2 px-4 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="bg-[#F3F6FF] border-b border-[#E1E7F2] py-1.5 sm:py-2 px-2.5 sm:px-4 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded font-black bg-[#E6F9FC] text-[#00AFC1] border border-[#B4EFF5] tracking-wider text-[11px]">
+            <span className="px-2 py-0.5 rounded font-black bg-[#E6F9FC] text-[#00AFC1] border border-[#B4EFF5] tracking-wider text-[10px] sm:text-[11px]">
               DEX26031
             </span>
-            <span className="font-bold text-[#8755E8]">Infinite Loopers</span>
+            <span className="font-bold text-[#8755E8] text-[11px] sm:text-xs">Infinite Loopers</span>
             <span className="text-[#CBD5E1] hidden sm:inline">|</span>
             <span className="text-[#64708A] font-semibold hidden md:inline">Instant Role Selector:</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap gap-1 sm:gap-2">
             <button
               onClick={() => onEnterDashboard(PRESET_USERS.demo_student)}
-              className="px-3 py-1 rounded-lg bg-[#EEF3FF] hover:bg-[#D5E2FF] text-[#2855D9] border border-[#D5E2FF] text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
+              className="px-2.5 sm:px-3 py-1 rounded-lg bg-[#EEF3FF] hover:bg-[#D5E2FF] text-[#2855D9] border border-[#D5E2FF] text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 shadow-2xs whitespace-nowrap"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Student (Alex)</span>
+              <Sparkles className="w-3 h-3" />
+              <span>Student</span>
             </button>
             <button
               onClick={() => onEnterDashboard(PRESET_USERS.faculty_thorne)}
-              className="px-3 py-1 rounded-lg bg-[#F6F0FF] hover:bg-[#E8DCFD] text-[#8755E8] border border-[#E8DCFD] text-xs font-bold transition-all shadow-2xs"
+              className="px-2 sm:px-3 py-1 rounded-lg bg-[#F6F0FF] hover:bg-[#E8DCFD] text-[#8755E8] border border-[#E8DCFD] text-[11px] sm:text-xs font-bold transition-all shadow-2xs whitespace-nowrap"
             >
               🏛️ Faculty
             </button>
             <button
               onClick={handleOpenParentPortal}
-              className="px-3 py-1 rounded-lg bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] text-xs font-bold transition-all shadow-2xs"
+              className="hidden xs:inline-flex px-2 sm:px-3 py-1 rounded-lg bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] text-[11px] sm:text-xs font-bold transition-all shadow-2xs whitespace-nowrap"
             >
-              🛡️ Parent Portal
+              🛡️ Parent
             </button>
             <button
               onClick={onOpenAuth}
-              className="px-3 py-1 rounded-lg bg-white hover:bg-[#F3F6FF] text-[#17213B] border border-[#E1E7F2] text-xs font-semibold transition-all shadow-2xs"
+              className="px-2.5 sm:px-3 py-1 rounded-lg bg-white hover:bg-[#F3F6FF] text-[#17213B] border border-[#E1E7F2] text-[11px] sm:text-xs font-semibold transition-all shadow-2xs whitespace-nowrap"
             >
               Sign In
             </button>
@@ -130,40 +130,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
 
       {/* ── HEADER ───────────────────────────────────────────────────────────── */}
       <header className="bg-white/95 backdrop-blur-md border-b border-[#E1E7F2] sticky top-10 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#2855D9] via-[#6842D0] to-[#8755E8] flex items-center justify-center text-white shadow-md shadow-[#2855D9]/20">
-              <Brain className="w-6 h-6 text-white" />
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#2855D9] via-[#6842D0] to-[#8755E8] flex items-center justify-center text-white shadow-md shadow-[#2855D9]/20 shrink-0">
+              <Brain className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <span className="text-xl font-black tracking-tight text-[#17213B]">
+            <div className="flex items-center gap-2">
+              <span className="text-lg sm:text-xl font-black tracking-tight text-[#17213B] whitespace-nowrap">
                 NEURO<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2855D9] to-[#8755E8]">NEXUS</span>
               </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#EEF3FF] text-[#2855D9] rounded-md border border-[#D5E2FF]">
+              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#EEF3FF] text-[#2855D9] rounded-md border border-[#D5E2FF] whitespace-nowrap">
                 Light Theme
               </span>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-semibold text-[#64708A]">
-            <a href="#features" className="hover:text-[#2855D9] transition-colors">Features</a>
-            <a href="#courses" className="hover:text-[#2855D9] transition-colors">Courses</a>
-            <a href="#neuro" className="hover:text-[#2855D9] transition-colors">EEG Studio</a>
-            <a href="#ai" className="hover:text-[#2855D9] transition-colors">AI Insights</a>
-            <a href="#wellbeing" className="hover:text-[#2855D9] transition-colors">Wellbeing</a>
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-6 text-sm font-semibold text-[#64708A] shrink min-w-0" aria-label="Landing Page Navigation">
+            <a href="#features" className="hover:text-[#2855D9] transition-colors whitespace-nowrap">Features</a>
+            <a href="#courses" className="hover:text-[#2855D9] transition-colors whitespace-nowrap">Courses</a>
+            <a href="#neuro" className="hover:text-[#2855D9] transition-colors whitespace-nowrap">EEG Studio</a>
+            <a href="#ai" className="hover:text-[#2855D9] transition-colors whitespace-nowrap">AI Insights</a>
+            <a href="#wellbeing" className="hover:text-[#2855D9] transition-colors whitespace-nowrap">Wellbeing</a>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               onClick={handleOpenParentPortal}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] text-xs font-bold transition-all shadow-2xs"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] text-xs font-bold transition-all shadow-2xs shrink-0 whitespace-nowrap"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Parent Portal</span>
             </button>
             <button
               onClick={() => onEnterDashboard(PRESET_USERS.demo_student)}
-              className="px-4 py-2 rounded-xl bg-[#2855D9] hover:bg-[#1E44B5] text-white text-xs font-bold shadow-md shadow-[#2855D9]/20 transition-all flex items-center gap-2"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-[#2855D9] hover:bg-[#1E44B5] text-white text-xs font-bold shadow-md shadow-[#2855D9]/20 transition-all flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span className="hidden sm:inline">Launch Dashboard</span>
@@ -171,7 +171,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl text-[#64708A] hover:bg-[#F3F6FF] border border-[#E1E7F2] shrink-0"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl text-[#64708A] hover:bg-[#F3F6FF] border border-[#E1E7F2] shrink-0"
               aria-label="Toggle navigation"
             >
               {mobileMenuOpen ? <X className="w-5 h-5 text-[#2855D9]" /> : <Menu className="w-5 h-5" />}
@@ -181,7 +181,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard, onOp
 
         {/* Mobile Dropdown Menu for Landing Page */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-[#E1E7F2] bg-white px-4 py-3 space-y-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="lg:hidden border-t border-[#E1E7F2] bg-white px-4 py-3 space-y-2 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
             <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">Features</a>
             <a href="#courses" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">Courses</a>
             <a href="#neuro" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-sm font-semibold text-[#64708A] hover:text-[#2855D9]">EEG Studio</a>

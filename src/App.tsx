@@ -441,6 +441,7 @@ export default function App() {
         unreadMessages={unreadMessages}
         onOpenTimer={() => setOpenModal('pomodoro')}
         onOpenHardwareManager={() => setShowHardwareModal(true)}
+        onOpenAuth={(mode) => openAuth(mode || 'login')}
       />
 
       {/* Persistent Demo Mode Banner (Suppressed on Parent Portal) */}
