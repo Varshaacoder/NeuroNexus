@@ -280,7 +280,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* ── 2. CENTER REGION: MAIN NAVIGATION LINKS (Responsive Tiered) ── */}
         <nav
-          className="hidden lg:flex items-center justify-center gap-1 xl:gap-1.5 min-w-0 justify-self-center overflow-hidden"
+          className="hidden lg:flex items-center justify-center gap-1 xl:gap-1.5 min-w-0 justify-self-center"
           aria-label="Main Navigation"
         >
           {/* Direct Core Navigation Items */}
